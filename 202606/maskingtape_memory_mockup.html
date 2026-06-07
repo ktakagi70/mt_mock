@@ -1,0 +1,267 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, sans-serif; }
+
+  #app {
+    width: 100%;
+    max-width: 390px;
+    margin: 0 auto;
+    height: 720px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 40px;
+    border: 8px solid #1a1a1a;
+    background: #F4E0C4;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.18);
+  }
+
+  /* ---- COVER SCREEN ---- */
+  #cover {
+    position: absolute;
+    inset: 0;
+    background: #F4E0C4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: opacity 0.6s ease;
+    z-index: 10;
+  }
+  #cover.hidden { opacity: 0; pointer-events: none; }
+
+  #cover-img-wrap {
+    width: 220px;
+    height: 320px;
+    position: relative;
+  }
+  #cover-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 6px;
+  }
+  #cover-hint {
+    margin-top: 28px;
+    font-size: 12px;
+    color: #8B7355;
+    letter-spacing: 0.08em;
+    text-align: center;
+  }
+  #cover-title {
+    margin-top: 8px;
+    font-size: 11px;
+    color: #B8A48C;
+    letter-spacing: 0.12em;
+  }
+
+  /* ---- DIARY SCREEN ---- */
+  #diary {
+    position: absolute;
+    inset: 0;
+    background: #F4E0C4;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.6s ease;
+  }
+  #diary.visible { opacity: 1; pointer-events: all; }
+
+  /* status bar area */
+  #statusbar {
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+  }
+  #statusbar-time { font-size: 13px; font-weight: 600; color: #4a3728; }
+  #statusbar-title { font-size: 12px; color: #8B7355; letter-spacing: 0.06em; }
+
+  /* page slider */
+  #pages-wrap {
+    display: flex;
+    transition: transform 0.45s cubic-bezier(0.4,0,0.2,1);
+    height: calc(100% - 44px - 64px);
+  }
+
+  .page {
+    min-width: 100%;
+    height: 100%;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: relative;
+  }
+
+  .page-date {
+    font-size: 11px;
+    color: #8B7355;
+    letter-spacing: 0.1em;
+    font-weight: 500;
+  }
+
+  .page-memory {
+    font-size: 12px;
+    color: #6B5240;
+    line-height: 1.6;
+    font-style: italic;
+  }
+
+  .photo-wrap {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .photo-wrap img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 4px;
+  }
+
+  /* tape strips (CSS only) */
+  .tape {
+    position: absolute;
+    height: 18px;
+    border-radius: 2px;
+    opacity: 0.82;
+  }
+
+  /* bottom nav */
+  #bottom-nav {
+    position: absolute;
+    bottom: 0;
+    left: 0; right: 0;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 32px;
+    background: rgba(244,224,196,0.92);
+    border-top: 0.5px solid rgba(139,115,85,0.2);
+  }
+
+  .nav-btn {
+    background: none;
+    border: 1px solid rgba(139,115,85,0.4);
+    border-radius: 20px;
+    padding: 6px 18px;
+    font-size: 12px;
+    color: #6B5240;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+  }
+  .nav-btn:disabled { opacity: 0.3; cursor: default; }
+
+  #page-indicator {
+    font-size: 11px;
+    color: #8B7355;
+    letter-spacing: 0.08em;
+  }
+
+  /* open in app btn */
+  #open-btn {
+    display: block;
+    margin: 0 auto;
+    background: none;
+    border: 1px solid rgba(139,115,85,0.5);
+    border-radius: 20px;
+    padding: 5px 16px;
+    font-size: 11px;
+    color: #8B7355;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+  }
+</style>
+
+<div id="app" aria-label="maskingtape memory diary mockup">
+  <!-- COVER -->
+  <div id="cover" onclick="openDiary()">
+    <div id="cover-img-wrap">
+      <img src="images/image-1780799221686.png" alt="Traveler's notebook cover" onerror="this.style.background='#8B6348';this.alt='';"/>
+    </div>
+    <p id="cover-hint">tap to open your memories</p>
+    <p id="cover-title">maskingtape · diary</p>
+  </div>
+
+  <!-- DIARY -->
+  <div id="diary">
+    <div id="statusbar">
+      <span id="statusbar-time">20:37</span>
+      <span id="statusbar-title">your memories</span>
+    </div>
+
+    <div id="pages-wrap">
+
+      <!-- PAGE 1 -->
+      <div class="page">
+        <p class="page-date">June 7, 2026 · Sunday</p>
+        <p class="page-memory">"A quiet Tuesday in November. You used this tape 47 times."</p>
+        <div class="photo-wrap">
+          <img src="images/7r6pP.jpg" alt="Street memory"/>
+        </div>
+      </div>
+
+      <!-- PAGE 2 -->
+      <div class="page">
+        <p class="page-date">March 14, 2026 · Saturday</p>
+        <p class="page-memory">"Before the day got busy. You opened the app at 7:12 am."</p>
+        <div class="photo-wrap">
+          <img src="images/oPLEj.jpg" alt="Quiet morning memory"/>
+        </div>
+      </div>
+
+      <!-- PAGE 3 -->
+      <div class="page">
+        <p class="page-date">October 3, 2025 · Friday</p>
+        <p class="page-memory">"That afternoon at the park. This tape was your favorite that month."</p>
+        <div class="photo-wrap">
+          <img src="images/xeiee.jpg" alt="Park memory"/>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- BOTTOM NAV -->
+    <div id="bottom-nav">
+      <button class="nav-btn" id="prev-btn" onclick="prevPage()" disabled>← prev</button>
+      <span id="page-indicator">1 / 3</span>
+      <button class="nav-btn" id="next-btn" onclick="nextPage()">next →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let current = 0;
+  const total = 3;
+
+  function openDiary() {
+    document.getElementById('cover').classList.add('hidden');
+    document.getElementById('diary').classList.add('visible');
+  }
+
+  function updatePage() {
+    document.getElementById('pages-wrap').style.transform = 'translateX(-' + (current * 100) + '%)';
+    document.getElementById('page-indicator').textContent = (current + 1) + ' / ' + total;
+    document.getElementById('prev-btn').disabled = current === 0;
+    document.getElementById('next-btn').disabled = current === total - 1;
+  }
+
+  function prevPage() { if (current > 0) { current--; updatePage(); } }
+  function nextPage() { if (current < total - 1) { current++; updatePage(); } }
+
+  // swipe support
+  let startX = 0;
+  const wrap = document.getElementById('pages-wrap');
+  wrap.addEventListener('touchstart', e => { startX = e.touches[0].clientX; });
+  wrap.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - startX;
+    if (dx < -40) nextPage();
+    else if (dx > 40) prevPage();
+  });
+</script>
