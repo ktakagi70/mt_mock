@@ -26,6 +26,8 @@
     display: flex;
     flex-direction: column;
   }
+
+  /* status bar */
   #statusbar {
     height: 48px;
     flex-shrink: 0;
@@ -39,72 +41,75 @@
   #statusbar-time { font-size: 13px; font-weight: 600; color: #4a3728; }
   #statusbar-title { font-size: 11px; color: #8B7355; letter-spacing: 0.08em; }
 
+  /* scroll area */
   #scroll-area {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
-    padding: 0;
+    position: relative;
   }
   #scroll-area::-webkit-scrollbar { display: none; }
 
-  /* 背景画像を縦に並べるラッパー */
-  .bg-strip {
-    width: 100%;
-    position: relative;
-  }
-  /* ポケット背景画像：3分割して1行ずつ表示 */
-  .bg-strip::before {
-    content: '';
+  /* ポケット背景画像を縦に3枚並べて疑似的に3行分を作る */
+  #bg-column {
     position: absolute;
-    inset: 0;
-    background-image: var(--bg-url);
-    background-size: 100% 300%; /* 縦3倍に引き伸ばして1行分だけ見せる */
-    background-position: var(--bg-pos);
-    background-repeat: no-repeat;
+    top: 0; left: 0; right: 0;
+    display: flex;
+    flex-direction: column;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .bg-segment {
+    width: 100%;
+    /* 各セグメントは写真カード1枚分の高さに合わせる */
+    flex-shrink: 0;
+  }
+  .bg-segment img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
   }
 
-  .pocket {
-    height: 82svh;
-    max-height: 660px;
+  /* 写真カードを縦に並べるコンテナ */
+  #cards {
     position: relative;
+    z-index: 1;
+    padding: 0;
+  }
+
+  /* 1枚のカード：画面高の85%を占め、次のカードがちらっと見える */
+  .card {
+    height: 83svh;
+    max-height: 680px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    padding: 8% 30% 6%;
     cursor: pointer;
-    padding: 10% 22% 12%;
+    position: relative;
   }
 
-  .pocket img.photo {
+  .card img.photo {
     width: 100%;
     flex: 1;
+    min-height: 0;
     object-fit: cover;
     border-radius: 3px;
     display: block;
-    box-shadow: 0 3px 12px rgba(0,0,0,0.18);
-    min-height: 0;
-    position: relative;
-    z-index: 1;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.22);
   }
 
-  .pocket-date {
+  .card-date {
     margin-top: 10px;
     font-size: 11px;
-    color: #6B5240;
+    color: #5a4030;
     letter-spacing: 0.1em;
     text-align: center;
     flex-shrink: 0;
-    position: relative;
-    z-index: 1;
-  }
-
-  /* 各行の区切り */
-  .row-divider {
-    height: 10px;
-    background: rgba(210,195,175,0.4);
-    border-top: 1px solid rgba(180,165,145,0.35);
-    border-bottom: 1px solid rgba(230,218,200,0.6);
   }
 
   /* lightbox */
@@ -196,31 +201,32 @@
 
   <div id="scroll-area">
 
-    <!-- Row 1: 背景画像の上1/3を表示 -->
-    <div class="bg-strip" style="--bg-url: url('images/image-1780799198891.png'); --bg-pos: center top;">
-      <div class="pocket" onclick="openLight(0)">
+    <!-- 背景：ポケット画像を3行分縦に並べる（JSで高さを合わせる） -->
+    <div id="bg-column">
+      <div class="bg-segment" id="bg0">
+        <img src="images/image-1780799198891.png" alt=""/>
+      </div>
+      <div class="bg-segment" id="bg1">
+        <img src="images/image-1780799198891.png" alt=""/>
+      </div>
+      <div class="bg-segment" id="bg2">
+        <img src="images/image-1780799198891.png" alt=""/>
+      </div>
+    </div>
+
+    <!-- 写真カード -->
+    <div id="cards">
+      <div class="card" id="card0" onclick="openLight(0)">
         <img class="photo" src="images/7r6pP.jpg" alt="memory"/>
-        <p class="pocket-date">2026.06.07</p>
+        <p class="card-date">2026.06.07</p>
       </div>
-    </div>
-
-    <div class="row-divider"></div>
-
-    <!-- Row 2: 背景画像の中1/3を表示 -->
-    <div class="bg-strip" style="--bg-url: url('images/image-1780799198891.png'); --bg-pos: center 50%;">
-      <div class="pocket" onclick="openLight(1)">
+      <div class="card" id="card1" onclick="openLight(1)">
         <img class="photo" src="images/oPLEj.jpg" alt="memory"/>
-        <p class="pocket-date">2026.03.14</p>
+        <p class="card-date">2026.03.14</p>
       </div>
-    </div>
-
-    <div class="row-divider"></div>
-
-    <!-- Row 3: 背景画像の下1/3を表示 -->
-    <div class="bg-strip" style="--bg-url: url('images/image-1780799198891.png'); --bg-pos: center bottom;">
-      <div class="pocket" onclick="openLight(2)">
+      <div class="card" id="card2" onclick="openLight(2)">
         <img class="photo" src="images/xeiee.jpg" alt="memory"/>
-        <p class="pocket-date">2025.10.03</p>
+        <p class="card-date">2025.10.03</p>
       </div>
     </div>
 
@@ -264,6 +270,19 @@
     { img: 'images/oPLEj.jpg', date: 'March 14, 2026',  memory: 'Before the day got busy. You opened the app at 7:12 am.' },
     { img: 'images/xeiee.jpg', date: 'October 3, 2025', memory: 'That afternoon at the park. This tape was your favorite that month.' },
   ];
+
+  // 背景セグメントの高さをカードの高さに合わせる
+  function syncBgHeight() {
+    for (let i = 0; i < 3; i++) {
+      const card = document.getElementById('card' + i);
+      const bg = document.getElementById('bg' + i);
+      const h = card.offsetHeight;
+      bg.style.height = h + 'px';
+    }
+  }
+  window.addEventListener('load', syncBgHeight);
+  window.addEventListener('resize', syncBgHeight);
+
   function openLight(i) {
     const d = data[i];
     document.getElementById('lb-img').src = d.img;
