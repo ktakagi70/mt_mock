@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>maskingtape · memories</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%;
+    background: #2a2218;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-family: -apple-system, 'Helvetica Neue', sans-serif;
+  }
+  #app {
+    width: 100%;
+    max-width: 390px;
+    height: 100svh;
+    max-height: 844px;
+    position: relative;
+    overflow: hidden;
+    background: #F4E0C4;
+    display: flex;
+    flex-direction: column;
+  }
+  #statusbar {
+    height: 48px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    background: #F4E0C4;
+    z-index: 2;
+  }
+  #statusbar-time { font-size: 13px; font-weight: 600; color: #4a3728; }
+  #statusbar-title { font-size: 11px; color: #8B7355; letter-spacing: 0.08em; }
+
+  #scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding: 8px 16px 0;
+  }
+  #scroll-area::-webkit-scrollbar { display: none; }
+
+  .pocket {
+    height: 82svh;
+    max-height: 660px;
+    margin-bottom: 12px;
+    position: relative;
+    background: rgba(255,252,248,0.5);
+    border: 1px solid rgba(200,188,170,0.7);
+    border-radius: 6px;
+    padding: 14px 14px 36px;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+  }
+  .pocket::after {
+    content: '';
+    position: absolute;
+    bottom: 10px;
+    left: 14px; right: 14px;
+    height: 1px;
+    border-bottom: 1.5px dashed rgba(180,165,145,0.5);
+  }
+  .pocket img {
+    width: 100%;
+    flex: 1;
+    object-fit: cover;
+    border-radius: 3px;
+    display: block;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    min-height: 0;
+  }
+  .pocket-date {
+    margin-top: 10px;
+    font-size: 11px;
+    color: #8B7355;
+    letter-spacing: 0.1em;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  #lightbox {
+    position: absolute;
+    inset: 0;
+    background: rgba(42,34,24,0.93);
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    padding: 32px 28px;
+  }
+  #lightbox.visible { opacity: 1; pointer-events: all; }
+  #lightbox img {
+    max-width: 100%;
+    max-height: 60%;
+    object-fit: contain;
+    border-radius: 4px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+  #lb-date {
+    margin-top: 20px;
+    font-size: 11px;
+    color: #C4A882;
+    letter-spacing: 0.1em;
+  }
+  #lb-memory {
+    margin-top: 10px;
+    font-size: 13px;
+    color: #E8D5BC;
+    font-style: italic;
+    text-align: center;
+    line-height: 1.7;
+  }
+  #lightbox-close {
+    margin-top: 32px;
+    background: none;
+    border: 1px solid rgba(196,168,130,0.5);
+    border-radius: 20px;
+    padding: 8px 32px;
+    font-size: 12px;
+    color: #C4A882;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+  }
+
+  #tabbar {
+    flex-shrink: 0;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    border-top: 0.5px solid rgba(139,115,85,0.2);
+    background: rgba(244,224,196,0.95);
+  }
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    color: #8B7355;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    opacity: 0.45;
+  }
+  .tab-item.active { opacity: 1; }
+  .tab-icon svg {
+    width: 20px; height: 20px;
+    stroke: #8B7355; fill: none;
+    stroke-width: 1.5;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="statusbar">
+    <span id="statusbar-time">20:37</span>
+    <span id="statusbar-title">memories</span>
+  </div>
+
+  <div id="scroll-area">
+    <div class="pocket" onclick="openLight(0)">
+      <img src="images/7r6pP.jpg" alt="memory"/>
+      <p class="pocket-date">2026.06.07</p>
+    </div>
+    <div class="pocket" onclick="openLight(1)">
+      <img src="images/oPLEj.jpg" alt="memory"/>
+      <p class="pocket-date">2026.03.14</p>
+    </div>
+    <div class="pocket" onclick="openLight(2)">
+      <img src="images/xeiee.jpg" alt="memory"/>
+      <p class="pocket-date">2025.10.03</p>
+    </div>
+  </div>
+
+  <div id="lightbox" onclick="closeLight()">
+    <img id="lb-img" src="" alt=""/>
+    <p id="lb-date"></p>
+    <p id="lb-memory"></p>
+    <button id="lightbox-close" onclick="closeLight()">close</button>
+  </div>
+
+  <div id="tabbar">
+    <div class="tab-item">
+      <div class="tab-icon">
+        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </div>
+      home
+    </div>
+    <div class="tab-item active">
+      <div class="tab-icon">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      </div>
+      memories
+    </div>
+    <div class="tab-item">
+      <div class="tab-icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      </div>
+      new
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const data = [
+    { img: 'images/7r6pP.jpg', date: 'June 7, 2026',    memory: 'A quiet afternoon in the city. You used this tape 47 times.' },
+    { img: 'images/oPLEj.jpg', date: 'March 14, 2026',  memory: 'Before the day got busy. You opened the app at 7:12 am.' },
+    { img: 'images/xeiee.jpg', date: 'October 3, 2025', memory: 'That afternoon at the park. This tape was your favorite that month.' },
+  ];
+  function openLight(i) {
+    const d = data[i];
+    document.getElementById('lb-img').src = d.img;
+    document.getElementById('lb-date').textContent = d.date;
+    document.getElementById('lb-memory').textContent = '"' + d.memory + '"';
+    document.getElementById('lightbox').classList.add('visible');
+  }
+  function closeLight() {
+    document.getElementById('lightbox').classList.remove('visible');
+  }
+</script>
+</body>
+</html>
