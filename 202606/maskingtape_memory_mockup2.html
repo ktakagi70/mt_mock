@@ -44,49 +44,70 @@
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
-    padding: 8px 16px 0;
+    padding: 0;
   }
   #scroll-area::-webkit-scrollbar { display: none; }
+
+  /* 背景画像を縦に並べるラッパー */
+  .bg-strip {
+    width: 100%;
+    position: relative;
+  }
+  /* ポケット背景画像：3分割して1行ずつ表示 */
+  .bg-strip::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: var(--bg-url);
+    background-size: 100% 300%; /* 縦3倍に引き伸ばして1行分だけ見せる */
+    background-position: var(--bg-pos);
+    background-repeat: no-repeat;
+  }
 
   .pocket {
     height: 82svh;
     max-height: 660px;
-    margin-bottom: 12px;
     position: relative;
-    background: rgba(255,252,248,0.5);
-    border: 1px solid rgba(200,188,170,0.7);
-    border-radius: 6px;
-    padding: 14px 14px 36px;
     display: flex;
     flex-direction: column;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
+    padding: 10% 22% 12%;
   }
-  .pocket::after {
-    content: '';
-    position: absolute;
-    bottom: 10px;
-    left: 14px; right: 14px;
-    height: 1px;
-    border-bottom: 1.5px dashed rgba(180,165,145,0.5);
-  }
-  .pocket img {
+
+  .pocket img.photo {
     width: 100%;
     flex: 1;
     object-fit: cover;
     border-radius: 3px;
     display: block;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 3px 12px rgba(0,0,0,0.18);
     min-height: 0;
+    position: relative;
+    z-index: 1;
   }
+
   .pocket-date {
     margin-top: 10px;
     font-size: 11px;
-    color: #8B7355;
+    color: #6B5240;
     letter-spacing: 0.1em;
     text-align: center;
     flex-shrink: 0;
+    position: relative;
+    z-index: 1;
   }
 
+  /* 各行の区切り */
+  .row-divider {
+    height: 10px;
+    background: rgba(210,195,175,0.4);
+    border-top: 1px solid rgba(180,165,145,0.35);
+    border-bottom: 1px solid rgba(230,218,200,0.6);
+  }
+
+  /* lightbox */
   #lightbox {
     position: absolute;
     inset: 0;
@@ -135,6 +156,7 @@
     letter-spacing: 0.06em;
   }
 
+  /* tab bar */
   #tabbar {
     flex-shrink: 0;
     height: 60px;
@@ -173,20 +195,38 @@
   </div>
 
   <div id="scroll-area">
-    <div class="pocket" onclick="openLight(0)">
-      <img src="images/7r6pP.jpg" alt="memory"/>
-      <p class="pocket-date">2026.06.07</p>
+
+    <!-- Row 1: 背景画像の上1/3を表示 -->
+    <div class="bg-strip" style="--bg-url: url('images/image-1780799198891.png'); --bg-pos: center top;">
+      <div class="pocket" onclick="openLight(0)">
+        <img class="photo" src="images/7r6pP.jpg" alt="memory"/>
+        <p class="pocket-date">2026.06.07</p>
+      </div>
     </div>
-    <div class="pocket" onclick="openLight(1)">
-      <img src="images/oPLEj.jpg" alt="memory"/>
-      <p class="pocket-date">2026.03.14</p>
+
+    <div class="row-divider"></div>
+
+    <!-- Row 2: 背景画像の中1/3を表示 -->
+    <div class="bg-strip" style="--bg-url: url('images/image-1780799198891.png'); --bg-pos: center 50%;">
+      <div class="pocket" onclick="openLight(1)">
+        <img class="photo" src="images/oPLEj.jpg" alt="memory"/>
+        <p class="pocket-date">2026.03.14</p>
+      </div>
     </div>
-    <div class="pocket" onclick="openLight(2)">
-      <img src="images/xeiee.jpg" alt="memory"/>
-      <p class="pocket-date">2025.10.03</p>
+
+    <div class="row-divider"></div>
+
+    <!-- Row 3: 背景画像の下1/3を表示 -->
+    <div class="bg-strip" style="--bg-url: url('images/image-1780799198891.png'); --bg-pos: center bottom;">
+      <div class="pocket" onclick="openLight(2)">
+        <img class="photo" src="images/xeiee.jpg" alt="memory"/>
+        <p class="pocket-date">2025.10.03</p>
+      </div>
     </div>
+
   </div>
 
+  <!-- lightbox -->
   <div id="lightbox" onclick="closeLight()">
     <img id="lb-img" src="" alt=""/>
     <p id="lb-date"></p>
@@ -194,6 +234,7 @@
     <button id="lightbox-close" onclick="closeLight()">close</button>
   </div>
 
+  <!-- tab bar -->
   <div id="tabbar">
     <div class="tab-item">
       <div class="tab-icon">
