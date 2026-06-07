@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>maskingtape · drawer</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%;
+    background: #2a2218;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-family: -apple-system, 'Helvetica Neue', sans-serif;
+  }
+  #app {
+    width: 100%;
+    max-width: 390px;
+    height: 100svh;
+    max-height: 844px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* 背景：引き出し画像を全画面に */
+  #bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+  #bg img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 40%;
+    display: block;
+  }
+  /* 少し暗くして写真を目立たせる */
+  #bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(30,20,10,0.18);
+  }
+
+  /* status bar */
+  #statusbar {
+    position: relative;
+    z-index: 10;
+    height: 48px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    background: rgba(42,28,16,0.45);
+  }
+  #statusbar-time { font-size: 13px; font-weight: 600; color: #f0e0c8; }
+  #statusbar-title { font-size: 11px; color: #d4b896; letter-spacing: 0.08em; }
+
+  /* カードスタック */
+  #stack-area {
+    flex: 1;
+    position: relative;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .card {
+    position: absolute;
+    width: 68%;
+    background: #fff;
+    border-radius: 3px;
+    padding: 10px 10px 36px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+    transition: box-shadow 0.2s;
+  }
+  .card:active { cursor: grabbing; }
+
+  .card img {
+    width: 100%;
+    aspect-ratio: 3/4;
+    object-fit: cover;
+    display: block;
+    border-radius: 1px;
+  }
+
+  .card-date {
+    margin-top: 8px;
+    font-size: 10px;
+    color: #8B7355;
+    letter-spacing: 0.1em;
+    text-align: center;
+  }
+
+  /* ヒント */
+  #hint {
+    position: relative;
+    z-index: 10;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+  }
+  .hint-arrow {
+    font-size: 11px;
+    color: rgba(240,224,200,0.7);
+    letter-spacing: 0.06em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .hint-arrow svg {
+    width: 16px; height: 16px;
+    stroke: rgba(240,224,200,0.7);
+    fill: none;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* tab bar */
+  #tabbar {
+    position: relative;
+    z-index: 10;
+    flex-shrink: 0;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    background: rgba(42,28,16,0.55);
+    border-top: 0.5px solid rgba(200,170,130,0.2);
+  }
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    color: #d4b896;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    opacity: 0.45;
+  }
+  .tab-item.active { opacity: 1; }
+  .tab-icon svg {
+    width: 20px; height: 20px;
+    stroke: #d4b896; fill: none;
+    stroke-width: 1.5;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
+
+  /* flyout message */
+  #flyout {
+    position: absolute;
+    z-index: 20;
+    top: 30%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(42,28,16,0.7);
+    color: #f0e0c8;
+    font-size: 12px;
+    padding: 8px 20px;
+    border-radius: 20px;
+    letter-spacing: 0.06em;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    white-space: nowrap;
+  }
+  #flyout.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- 背景 -->
+  <div id="bg">
+    <img src="images/image-1780799213097.png" alt="drawer"/>
+  </div>
+
+  <div id="statusbar">
+    <span id="statusbar-time">20:37</span>
+    <span id="statusbar-title">memories</span>
+  </div>
+
+  <div id="stack-area" id="stack-area">
+    <!-- JSで生成 -->
+  </div>
+
+  <div id="hint">
+    <div class="hint-arrow">
+      <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      pass
+    </div>
+    <div class="hint-arrow">
+      open
+      <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </div>
+  </div>
+
+  <div id="tabbar">
+    <div class="tab-item">
+      <div class="tab-icon">
+        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </div>
+      home
+    </div>
+    <div class="tab-item active">
+      <div class="tab-icon">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      </div>
+      memories
+    </div>
+    <div class="tab-item">
+      <div class="tab-icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      </div>
+      new
+    </div>
+  </div>
+
+  <div id="flyout"></div>
+</div>
+
+<script>
+  const photos = [
+    { img: 'images/7r6pP.jpg',  date: '2026.06.07', memory: 'A quiet afternoon in the city.' },
+    { img: 'images/oPLEj.jpg',  date: '2026.03.14', memory: 'Before the day got busy.' },
+    { img: 'images/xeiee.jpg',  date: '2025.10.03', memory: 'That afternoon at the park.' },
+    { img: 'images/7r6pP.jpg',  date: '2025.08.11', memory: 'A summer day you almost forgot.' },
+    { img: 'images/oPLEj.jpg',  date: '2025.05.03', memory: 'The morning light was perfect.' },
+  ];
+
+  // 各カードの初期ランダム回転
+  const rotations = [2, -3, 1.5, -2.5, 3.5];
+
+  const stackArea = document.getElementById('stack-area');
+  let cards = [];
+  let current = 0;
+
+  function buildStack() {
+    stackArea.innerHTML = '';
+    cards = [];
+    // 下から順に積む
+    for (let i = photos.length - 1; i >= 0; i--) {
+      const p = photos[i];
+      const el = document.createElement('div');
+      el.className = 'card';
+      el.style.transform = `rotate(${rotations[i % rotations.length]}deg)`;
+      el.style.zIndex = photos.length - i;
+      el.innerHTML = `
+        <img src="${p.img}" alt="memory" draggable="false"/>
+        <p class="card-date">${p.date}</p>
+      `;
+      stackArea.appendChild(el);
+      cards.unshift(el);
+    }
+    current = 0;
+    attachDrag(cards[0]);
+  }
+
+  function attachDrag(el) {
+    if (!el) return;
+    let startX = 0, startY = 0, curX = 0, curY = 0, dragging = false;
+    const baseRot = rotations[current % rotations.length];
+
+    function onStart(x, y) {
+      startX = x; startY = y;
+      dragging = true;
+      el.style.transition = 'none';
+    }
+    function onMove(x, y) {
+      if (!dragging) return;
+      curX = x - startX;
+      curY = y - startY;
+      const rot = baseRot + curX * 0.06;
+      el.style.transform = `translate(${curX}px, ${curY}px) rotate(${rot}deg)`;
+    }
+    function onEnd() {
+      if (!dragging) return;
+      dragging = false;
+      const threshold = 90;
+      if (Math.abs(curX) > threshold) {
+        // 飛ばす
+        const dir = curX > 0 ? 1 : -1;
+        el.style.transition = 'transform 0.4s ease, opacity 0.4s ease';
+        el.style.transform = `translate(${dir * 600}px, ${curY}px) rotate(${baseRot + dir * 30}deg)`;
+        el.style.opacity = '0';
+        showFlyout(dir > 0 ? 'open →' : '← pass');
+        current++;
+        setTimeout(() => {
+          el.remove();
+          if (current < cards.length) {
+            attachDrag(cards[current]);
+          } else {
+            // 全部消えたらリセット
+            setTimeout(buildStack, 600);
+          }
+        }, 420);
+      } else {
+        // 戻す
+        el.style.transition = 'transform 0.35s ease';
+        el.style.transform = `rotate(${baseRot}deg)`;
+      }
+      curX = 0; curY = 0;
+    }
+
+    // touch
+    el.addEventListener('touchstart', e => { onStart(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
+    el.addEventListener('touchmove',  e => { onMove(e.touches[0].clientX, e.touches[0].clientY); },  { passive: true });
+    el.addEventListener('touchend',   () => onEnd());
+
+    // mouse
+    el.addEventListener('mousedown',  e => onStart(e.clientX, e.clientY));
+    window.addEventListener('mousemove', e => { if (dragging) onMove(e.clientX, e.clientY); });
+    window.addEventListener('mouseup',   () => { if (dragging) onEnd(); });
+  }
+
+  function showFlyout(msg) {
+    const el = document.getElementById('flyout');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 900);
+  }
+
+  buildStack();
+</script>
+</body>
+</html>
