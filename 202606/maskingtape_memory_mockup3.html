@@ -160,6 +160,55 @@
     stroke-linecap: round; stroke-linejoin: round;
   }
 
+  /* lightbox */
+  #lightbox {
+    position: absolute;
+    inset: 0;
+    background: rgba(42,34,24,0.93);
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    padding: 32px 28px;
+  }
+  #lightbox.visible { opacity: 1; pointer-events: all; }
+  #lightbox img {
+    max-width: 100%;
+    max-height: 60%;
+    object-fit: contain;
+    border-radius: 4px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+  #lb-date {
+    margin-top: 20px;
+    font-size: 11px;
+    color: #C4A882;
+    letter-spacing: 0.1em;
+  }
+  #lb-memory {
+    margin-top: 10px;
+    font-size: 13px;
+    color: #E8D5BC;
+    font-style: italic;
+    text-align: center;
+    line-height: 1.7;
+  }
+  #lightbox-close {
+    margin-top: 32px;
+    background: none;
+    border: 1px solid rgba(196,168,130,0.5);
+    border-radius: 20px;
+    padding: 8px 32px;
+    font-size: 12px;
+    color: #C4A882;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+  }
+
   #flyout {
     position: absolute;
     z-index: 20;
@@ -224,6 +273,14 @@
       </div>
       new
     </div>
+  </div>
+
+  <!-- lightbox -->
+  <div id="lightbox" onclick="closeLight()">
+    <img id="lb-img" src="" alt=""/>
+    <p id="lb-date"></p>
+    <p id="lb-memory"></p>
+    <button id="lightbox-close" onclick="closeLight()">close</button>
   </div>
 
   <div id="flyout"></div>
@@ -293,7 +350,15 @@
       if (!dragging) return;
       dragging = false;
       const threshold = 80;
-      if (Math.abs(curX) > threshold) {
+      const tapThreshold = 8; // この範囲内の動きはタップとみなす
+      if (Math.abs(curX) < tapThreshold && Math.abs(curY) < tapThreshold) {
+        // タップ：ライトボックスを開く
+        el.style.transition = 'transform 0.35s ease';
+        const offsetX = (current - 2) * 6;
+        const offsetY = (current - 2) * 4;
+        el.style.transform = `translate(${offsetX}px, ${offsetY}px) rotate(${baseRotDeg}deg)`;
+        openLight(current);
+      } else if (Math.abs(curX) > threshold) {
         const dir = curX > 0 ? 1 : -1;
         el.style.transition = 'transform 0.4s ease, opacity 0.4s ease';
         el.style.transform = `translate(${dir * 700}px, ${curY}px) rotate(${baseRotDeg + dir * 25}deg)`;
@@ -330,6 +395,17 @@
     el.textContent = msg;
     el.classList.add('show');
     setTimeout(() => el.classList.remove('show'), 900);
+  }
+
+  function openLight(i) {
+    const p = photos[i];
+    document.getElementById('lb-img').src = p.img;
+    document.getElementById('lb-date').textContent = p.date;
+    document.getElementById('lb-memory').textContent = '"' + p.memory + '"';
+    document.getElementById('lightbox').classList.add('visible');
+  }
+  function closeLight() {
+    document.getElementById('lightbox').classList.remove('visible');
   }
 
   buildStack();
