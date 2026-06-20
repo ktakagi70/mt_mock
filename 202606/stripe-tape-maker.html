@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ストライプテープ メーカー</title>
+<title>Stripe Tape Maker</title>
 <style>
   :root{
-    --paper:#E9E3D6;          /* 作業台の紙 */
-    --paper-2:#F2EDE2;        /* パネル面 */
-    --ink:#2C2823;            /* 文字 */
-    --ink-soft:#6E665A;       /* 補助文字 */
-    --line:#D2C9B8;           /* 罫線 */
-    --accent:#3F5A6B;         /* くすんだ藍 */
+    --paper:#E9E3D6;          /* worktop paper */
+    --paper-2:#F2EDE2;        /* panel surface */
+    --ink:#2C2823;            /* text */
+    --ink-soft:#6E665A;       /* secondary text */
+    --line:#D2C9B8;           /* border */
+    --accent:#3F5A6B;         /* muted navy */
     --accent-soft:#8FA6AE;
     --tab:#fff;
     --shadow:0 2px 4px rgba(44,40,35,.10), 0 10px 24px rgba(44,40,35,.10);
@@ -23,7 +23,7 @@
     background:
       radial-gradient(120% 80% at 50% -10%, #F0EADD 0%, var(--paper) 60%) fixed;
     color:var(--ink);
-    font-family:"Hiragino Maru Gothic ProN","Hiragino Maru Gothic Pro","Quicksand",
+    font-family:"Quicksand","Hiragino Maru Gothic ProN","Hiragino Maru Gothic Pro",
       "Hiragino Sans","Yu Gothic UI","Segoe UI",system-ui,sans-serif;
     -webkit-font-smoothing:antialiased;
     line-height:1.6;
@@ -84,7 +84,7 @@
     background:radial-gradient(60% 40% at 70% 78%, rgba(255,255,255,.35), transparent 70%);
     pointer-events:none;
   }
-  /* 自前のデモ写真。photoタブのときだけ、src があれば表示（無ければ上のグラデがフォールバック） */
+  /* Demo photo: shown only on the "On a Photo" tab when src is set. Falls back to gradient if src is empty. */
   .photo-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;z-index:1}
   .stage[data-surface="photo"] .photo-bg:not([src=""]){display:block}
   .tape-holder{position:relative;z-index:2;filter:drop-shadow(0 4px 5px rgba(40,30,20,.28));transition:transform .5s cubic-bezier(.2,.9,.25,1)}
@@ -169,62 +169,61 @@
   <header class="top">
     <div class="title">
       <div class="eyebrow">Stripe Tape Maker</div>
-      <h1>ストライプテープを、つくる</h1>
-      <p>太さ・角度・色だけじゃない。かすれや剥がれまで、紙の佇まいごとデザインできます。</p>
+      <h1>Design Your Own Stripe Tape</h1>
+      <p>Width, angle, color — and beyond. Shape the aging, fraying, and feel of every piece.</p>
     </div>
-    <button class="shuffle" id="shuffle"><span class="dice">🎲</span>おまかせ</button>
+    <button class="shuffle" id="shuffle"><span class="dice">🎲</span>Surprise Me</button>
   </header>
 
   <div class="layout">
     <!-- PREVIEW -->
     <section class="stage-card">
-      <div class="surface-tabs" role="group" aria-label="貼る背景を選ぶ">
-        <button data-surface="paper" aria-pressed="true">紙の上</button>
-        <button data-surface="photo" aria-pressed="false">写真の上</button>
-        <button data-surface="kraft" aria-pressed="false">クラフト紙</button>
+      <div class="surface-tabs" role="group" aria-label="Choose a background surface">
+        <button data-surface="paper" aria-pressed="true">On Paper</button>
+        <button data-surface="photo" aria-pressed="false">On a Photo</button>
+        <button data-surface="kraft" aria-pressed="false">Kraft Paper</button>
       </div>
       <div class="stage" id="stage" data-surface="paper">
-        <!-- ▼▼ デモ写真：下の src="" に画像パスやURLを入れてください（例 src="demo.jpg"）。空のままなら従来のグラデが出ます ▼▼ -->
+        <!-- Demo photo: set src="demo.jpg" (or any URL) to show your own image on the "On a Photo" tab. Leave empty to use the default gradient. -->
         <img class="photo-bg" id="photoImg" src="" alt="" onerror="this.removeAttribute('src')">
-        <!-- ▲▲ ここまで ▲▲ -->
         <div class="tape-holder" id="tapeHolder"></div>
       </div>
       <div class="stage-foot">
-        <input type="text" id="tapeName" placeholder="このテープに名前をつける（任意）" maxlength="24">
-        <button class="save" id="saveBtn">コレクションに追加</button>
+        <input type="text" id="tapeName" placeholder="Give this tape a name (optional)" maxlength="24">
+        <button class="save" id="saveBtn">Add to Collection</button>
       </div>
     </section>
 
     <!-- CONTROLS -->
-    <section class="panel" aria-label="デザイン設定">
+    <section class="panel" aria-label="Design settings">
       <div class="group">
-        <h2>配色</h2>
-        <p class="role-label">地の色</p>
+        <h2>Colors</h2>
+        <p class="role-label">Base color</p>
         <div class="swatches" id="bgSwatches"></div>
-        <p class="role-label" style="margin-top:12px">線の色</p>
+        <p class="role-label" style="margin-top:12px">Stripe color</p>
         <div class="swatches" id="stripeSwatches"></div>
       </div>
 
       <div class="group">
-        <h2>かたち</h2>
+        <h2>Shape</h2>
         <div class="slider-row">
-          <label for="sw">線の太さ</label>
+          <label for="sw">Width</label>
           <input type="range" id="sw" min="2" max="44" value="12">
           <span class="val" id="swVal">12</span>
         </div>
         <div class="slider-row">
-          <label for="gap">間隔</label>
+          <label for="gap">Spacing</label>
           <input type="range" id="gap" min="2" max="60" value="16">
           <span class="val" id="gapVal">16</span>
         </div>
         <div class="dial-row">
-          <div class="dial" id="dial" tabindex="0" role="slider" aria-label="角度"
+          <div class="dial" id="dial" tabindex="0" role="slider" aria-label="Angle"
                aria-valuemin="0" aria-valuemax="180" aria-valuenow="0">
             <div class="needle" id="needle"></div><div class="hub"></div>
           </div>
           <div class="dial-meta">
             <span class="dval"><span id="angleVal">0</span>°</span>
-            <span class="dlabel">ドラッグして角度を回す</span>
+            <span class="dlabel">Drag to rotate</span>
             <div class="quick-angles">
               <button data-a="0">0°</button>
               <button data-a="45">45°</button>
@@ -236,33 +235,33 @@
       </div>
 
       <div class="group">
-        <h2>風合い <span class="n">＝個性が出るところ</span></h2>
-        <p class="texture-hint">パキッとした新品から、年季の入ったボロボロまで。</p>
+        <h2>Texture <span class="n">— where your tape gets its personality</span></h2>
+        <p class="texture-hint">From crisp and brand-new to worn, crinkled, and lived-in.</p>
         <div class="slider-row">
-          <label for="distress">かすれ</label>
+          <label for="distress">Distress</label>
           <input type="range" id="distress" min="0" max="100" value="12">
           <span class="val" id="distressVal">12</span>
         </div>
         <div class="slider-row">
-          <label for="wrinkle">しわ</label>
+          <label for="wrinkle">Wrinkle</label>
           <input type="range" id="wrinkle" min="0" max="100" value="18">
           <span class="val" id="wrinkleVal">18</span>
         </div>
         <div class="slider-row">
-          <label for="torn">端のやぶれ</label>
+          <label for="torn">Torn edges</label>
           <input type="range" id="torn" min="0" max="100" value="45">
           <span class="val" id="tornVal">45</span>
         </div>
-        <button class="reroll" id="reroll">🍃 テクスチャの出方を変える</button>
-        <p class="reroll-note">かすれがどこに出るか・しわがどう走るか、といった模様のランダム値を再設定します。強さのスライダーはそのままで、表情だけが変わります。</p>
+        <button class="reroll" id="reroll">🍃 Re-roll texture</button>
+        <p class="reroll-note">Randomizes <em>where</em> the distress and wrinkles appear — without touching your sliders. Same wear, different character.</p>
       </div>
     </section>
   </div>
 
   <!-- COLLECTION -->
   <section class="collection">
-    <h2>つくったテープ</h2>
-    <div class="shelf" id="shelf"><span class="empty">まだ空っぽ。気に入った一本を「コレクションに追加」してみてください。</span></div>
+    <h2>Your Collection</h2>
+    <div class="shelf" id="shelf"><span class="empty">Nothing here yet — hit "Add to Collection" when you find a tape you love.</span></div>
   </section>
 </div>
 
@@ -356,7 +355,7 @@ function buildSwatches(containerId, role){
   });
   // custom picker
   const cust = document.createElement("label");
-  cust.className="chip custom"; cust.title="自由な色";
+  cust.className="chip custom"; cust.title="Custom color";
   cust.innerHTML = "＋<input type='color' value='"+state[role]+"'>";
   cust.querySelector("input").oninput = e=>{ state[role]=e.target.value; syncSwatches(containerId, role); render(); };
   c.appendChild(cust);
@@ -461,11 +460,11 @@ document.getElementById("saveBtn").onclick=()=>{
   renderShelf();
 };
 function renderShelf(){
-  if(!collection.length){shelf.innerHTML='<span class="empty">まだ空っぽ。気に入った一本を「コレクションに追加」してみてください。</span>';return;}
+  if(!collection.length){shelf.innerHTML='<span class="empty">Nothing here yet — hit "Add to Collection" when you find a tape you love.</span>';return;}
   shelf.innerHTML="";
   collection.forEach((snap,i)=>{
     const card=document.createElement("div"); card.className="saved";
-    card.innerHTML=tapeSVG(snap,130,38)+'<div class="name">'+(snap.name||"無題のテープ")+'</div><button class="del" aria-label="削除">×</button>';
+    card.innerHTML=tapeSVG(snap,130,38)+'<div class="name">'+(snap.name||"Untitled tape")+'</div><button class="del" aria-label="Remove">×</button>';
     card.onclick=(e)=>{
       if(e.target.classList.contains("del")){collection.splice(i,1);renderShelf();return;}
       loadSnap(snap);
