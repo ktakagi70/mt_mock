@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>eye lab — めだまラボ | maskingtape</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&family=Yomogi&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#E3DCCD;      /* 机 */
+    --sheet:#F3EEE3;      /* 画用紙 */
+    --ink:#26211D;        /* 筆ペンの黒 */
+    --soft:#8B8175;       /* 補助文字 */
+    --ecru:#F4E0C4;       /* maskingtape の生成り */
+    --red:#BC4D38;        /* 朱 */
+    --line:rgba(38,33,29,.14);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Zen Maru Gothic','Hiragino Maru Gothic ProN',sans-serif;
+    display:flex;justify-content:center;
+    padding:18px 12px 44px;
+  }
+  .wrap{width:100%;max-width:430px}
+
+  header{display:flex;align-items:baseline;gap:8px;margin-bottom:2px}
+  .brand{font-size:14px;font-weight:700;letter-spacing:.05em}
+  .ver{font-size:11px;color:var(--soft)}
+  h1{font-family:'Yomogi',cursive;font-size:27px;margin:2px 0 0;font-weight:400;letter-spacing:.02em}
+  h1 small{font-family:'Zen Maru Gothic',sans-serif;font-size:12px;color:var(--soft);letter-spacing:.14em;margin-left:8px;font-weight:500}
+  .lede{font-size:12.5px;line-height:1.85;color:var(--soft);margin:8px 0 12px}
+
+  /* --- 画用紙 --- */
+  .sheet{
+    position:relative;background:var(--sheet);border-radius:3px;
+    box-shadow:0 3px 14px rgba(38,33,29,.13), inset 0 0 0 1px rgba(38,33,29,.05);
+    overflow:hidden;
+  }
+  .sheet::after{ /* 紙の粒子 */
+    content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
+    background-image:radial-gradient(rgba(38,33,29,.10) .5px, transparent .6px);
+    background-size:4px 4px;
+  }
+  .sheet.shake{animation:shake .42s cubic-bezier(.36,.07,.19,.97)}
+  @keyframes shake{
+    10%,90%{transform:translateX(-1.5px) rotate(-.25deg)}
+    30%,70%{transform:translateX(2.5px) rotate(.35deg)}
+    50%{transform:translateX(-2.5px) rotate(-.3deg)}
+  }
+  #stage{display:block;width:100%;height:auto;touch-action:none;cursor:grab}
+  #stage:active{cursor:grabbing}
+
+  /* --- 名乗り --- */
+  .name{
+    display:flex;align-items:baseline;justify-content:center;gap:10px;
+    margin:14px 0 2px;min-height:34px;
+  }
+  .name b{font-family:'Yomogi',cursive;font-weight:400;font-size:26px;color:var(--red);letter-spacing:.03em}
+  .name span{font-size:11.5px;color:var(--soft);letter-spacing:.05em}
+  .readout{text-align:center;font-size:11px;color:var(--soft);letter-spacing:.04em;margin-bottom:14px}
+
+  /* --- 棚 --- */
+  .shelf{margin-bottom:12px}
+  .shelf h2{
+    font-size:10.5px;font-weight:700;color:var(--soft);letter-spacing:.16em;
+    margin:0 0 6px;text-transform:uppercase;
+  }
+  .chips{display:flex;gap:7px;flex-wrap:wrap}
+  .chip{
+    border:1.5px solid var(--line);background:transparent;border-radius:999px;
+    padding:7px 13px;font-family:inherit;font-size:12.5px;font-weight:500;color:var(--ink);
+    cursor:pointer;transition:background .14s ease,border-color .14s ease,transform .1s ease;
+  }
+  .chip:hover{background:rgba(38,33,29,.045)}
+  .chip:active{transform:scale(.95)}
+  .chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--sheet)}
+  .chip svg{display:block}
+  .chip.icon{padding:6px 10px;line-height:0}
+
+  .actions{display:flex;gap:9px;margin-top:16px}
+  .btn{
+    flex:1;border:1.5px solid var(--ink);background:transparent;border-radius:2px;
+    padding:13px 10px;font-family:inherit;font-size:13.5px;font-weight:700;color:var(--ink);
+    cursor:pointer;letter-spacing:.04em;transition:background .14s ease,transform .1s ease;
+  }
+  .btn:hover{background:rgba(38,33,29,.05)}
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{background:var(--ink);color:var(--sheet)}
+  .btn.primary:hover{background:#3a332d}
+  .btn small{display:block;font-weight:500;font-size:10.5px;opacity:.7;margin-top:2px;letter-spacing:.02em}
+
+  /* --- テープ --- */
+  .tape-area{margin-top:22px;padding-top:18px;border-top:1px dashed var(--line);display:none}
+  .tape-area.on{display:block}
+  .tape-area h2{font-family:'Yomogi',cursive;font-weight:400;font-size:18px;margin:0 0 3px}
+  .tape-area p{font-size:12px;line-height:1.8;color:var(--soft);margin:0 0 12px}
+  #tape{display:block;width:100%;height:auto;filter:drop-shadow(0 2px 5px rgba(38,33,29,.18))}
+
+  .hint{font-size:11.5px;line-height:1.8;color:var(--soft);margin-top:18px;padding-top:14px;border-top:1px dashed var(--line)}
+  .hint b{color:var(--ink);font-weight:700}
+
+  :focus-visible{outline:2px solid var(--red);outline-offset:2px}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="brand">maskingtape</span><span class="ver">mock — eye lab</span></header>
+  <h1>めだまラボ<small>EYE LAB</small></h1>
+  <p class="lede">
+    線は一本も引きません。やることは<b>目を置く</b>ことだけ。<br>
+    高さと間隔がちょっと変わるだけで、顔は別人になります。
+  </p>
+
+  <div class="sheet" id="sheet">
+    <svg id="stage" viewBox="0 0 360 340" role="img" aria-label="顔のプレビュー"></svg>
+  </div>
+
+  <div class="name"><b id="nameJa">ごきげん</b><span id="nameEn">just fine</span></div>
+  <div class="readout" id="readout"></div>
+
+  <div class="shelf">
+    <h2>かおロール</h2>
+    <div class="chips" id="faceChips"></div>
+  </div>
+
+  <div class="shelf">
+    <h2>おまけ</h2>
+    <div class="chips" id="extraChips"></div>
+  </div>
+
+  <div class="actions">
+    <button class="btn" id="shuffle">ふるふる<small>線を引きなおす</small></button>
+    <button class="btn primary" id="toTape">テープにする<small>きょうだいが生まれる</small></button>
+  </div>
+
+  <div class="tape-area" id="tapeArea">
+    <h2>できたテープ</h2>
+    <p>同じ設定でも、一人ずつ手が違います。どこで切るかで、連れて帰る顔が決まります。</p>
+    <svg id="tape" viewBox="0 0 400 132" aria-label="できあがったマスキングテープ"></svg>
+  </div>
+
+  <p class="hint">
+    <b>あそびかた</b><br>
+    目を<b>ドラッグ</b>すると、高さと間隔が変わります。<br>
+    目を<b>タップ</b>すると形が変わります（両目いっしょ）。<br>
+    片目だけ<b>長おし</b>すると、その目だけ変わります。<br>
+    <br>
+    紙の上を<b>なぞる</b>と、両目がそこを見つめます。<br>
+    <b>目と目のあいだ</b>を触れば、寄り目。近いほど寄ります。<br>
+    紙のふち（顔の外）を<b>ちょんとタップ</b>すると、まっすぐに戻ります。<br>
+    <br>
+    かおロールの<b>いちばん右</b>を選ぶと、目だけのテープになります。
+  </p>
+</div>
+
+<script>
+/* ============ 乱数 ============ */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+/* ============ 線をなめらかに ============ */
+function smoothClosed(p){
+  const n=p.length;let d=`M ${p[0].x.toFixed(2)} ${p[0].y.toFixed(2)}`;
+  for(let i=0;i<n;i++){
+    const a=p[(i-1+n)%n],b=p[i],c=p[(i+1)%n],e=p[(i+2)%n];
+    d+=` C ${(b.x+(c.x-a.x)/6).toFixed(2)} ${(b.y+(c.y-a.y)/6).toFixed(2)} ${(c.x-(e.x-b.x)/6).toFixed(2)} ${(c.y-(e.y-b.y)/6).toFixed(2)} ${c.x.toFixed(2)} ${c.y.toFixed(2)}`;
+  }
+  return d+" Z";
+}
+function smoothOpen(p){
+  const n=p.length;let d=`M ${p[0].x.toFixed(2)} ${p[0].y.toFixed(2)}`;
+  for(let i=0;i<n-1;i++){
+    const a=p[Math.max(0,i-1)],b=p[i],c=p[i+1],e=p[Math.min(n-1,i+2)];
+    d+=` C ${(b.x+(c.x-a.x)/6).toFixed(2)} ${(b.y+(c.y-a.y)/6).toFixed(2)} ${(c.x-(e.x-b.x)/6).toFixed(2)} ${(c.y-(e.y-b.y)/6).toFixed(2)} ${c.x.toFixed(2)} ${c.y.toFixed(2)}`;
+  }
+  return d;
+}
+/* ふるえた円/楕円 */
+function blob(cx,cy,rx,ry,rnd,amp,N){
+  N=N||24;const p=[];
+  for(let i=0;i<N;i++){
+    const a=i/N*Math.PI*2-Math.PI/2, w=1+(rnd()-.5)*amp;
+    p.push({x:cx+Math.cos(a)*rx*w, y:cy+Math.sin(a)*ry*w});
+  }
+  return smoothClosed(p);
+}
+/* ふるえた円弧 */
+function arc(cx,cy,rx,ry,a0,a1,rnd,amp,N){
+  N=N||9;const p=[];
+  for(let i=0;i<N;i++){
+    const t=i/(N-1),a=a0+(a1-a0)*t,w=1+(rnd()-.5)*amp;
+    p.push({x:cx+Math.cos(a)*rx*w, y:cy+Math.sin(a)*ry*w});
+  }
+  return smoothOpen(p);
+}
+/* ふるえた直線 */
+function seg(x1,y1,x2,y2,rnd,amp){
+  const p=[];for(let i=0;i<5;i++){const t=i/4;
+    p.push({x:x1+(x2-x1)*t+(rnd()-.5)*amp,y:y1+(y2-y1)*t+(rnd()-.5)*amp});}
+  return smoothOpen(p);
+}
+/* 筆ペン風：同じ線を二度なぞる */
+function ink(d,w,fill){
+  const f=fill?'var(--ink)':'none';
+  return `<path d="${d}" fill="${f}" stroke="var(--ink)" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`+
+         `<path d="${d}" fill="none" stroke="var(--ink)" stroke-width="${(w*.5).toFixed(2)}" stroke-linecap="round" stroke-linejoin="round" opacity=".38" transform="translate(.8,-.6)"/>`;
+}
+
+/* ============ 顔の輪郭 ============ */
+const FACES=[
+  {id:'maru',   label:'まる'},
+  {id:'onigiri',label:'おにぎり'},
+  {id:'shikaku',label:'しかく'},
+  {id:'tate',   label:'たてなが'},
+  {id:'none',   label:'かおなし'},
+];
+function facePath(type,cx,cy,R,rnd){
+  const N=30,p=[];
+  let sx=1,sy=1;
+  if(type==='tate'){sx=.83;sy=1.08}
+  if(type==='shikaku'){sx=1.0;sy=.95}
+  for(let i=0;i<N;i++){
+    const a=i/N*Math.PI*2-Math.PI/2;
+    let r=1;
+    if(type==='onigiri') r=1-0.11*Math.cos(3*(a+Math.PI/2));
+    if(type==='shikaku'){
+      const k=4.2,den=Math.pow(Math.pow(Math.abs(Math.cos(a)),k)+Math.pow(Math.abs(Math.sin(a)),k),1/k);
+      r=0.97/den;
+    }
+    const w=1+(rnd()-.5)*.055;
+    p.push({x:cx+Math.cos(a)*R*sx*r*w, y:cy+Math.sin(a)*R*sy*r*w});
+  }
+  return smoothClosed(p);
+}
+
+/* ============ 目の形 ============ */
+const EYES=[
+  {id:'maru',   label:'まる'},
+  {id:'ten',    label:'てん'},
+  {id:'nico',   label:'にこ'},
+  {id:'nemui',  label:'ねむい'},
+  {id:'matsuge',label:'まつげ'},
+  {id:'guru',   label:'ぐるぐる'},
+  {id:'kira',   label:'きらきら'},
+  {id:'batsu',  label:'ばつ'},
+];
+const EYE_MOOD={
+  nico :{ja:'うれしい',   en:'delighted'},
+  nemui:{ja:'ねむたい',   en:'half asleep'},
+  guru :{ja:'こんらん',   en:'seeing stars'},
+  kira :{ja:'こい',       en:'in love'},
+  batsu:{ja:'ばたんきゅう',en:'done for today'},
+};
+
+function drawEye(kind,cx,cy,r,rnd,gx,gy,lw){
+  const px=cx+gx*r*.30, py=cy+gy*r*.30;   /* 瞳の位置 */
+  let s='';
+  switch(kind){
+    case 'ten':
+      s+=ink(blob(px,py,r*.62,r*.66,rnd,.16,14),lw*.6,true); break;
+    case 'maru':
+      s+=ink(blob(cx,cy,r,r*1.03,rnd,.11,20),lw,false);
+      s+=ink(blob(px,py,r*.46,r*.50,rnd,.20,12),lw*.5,true); break;
+    case 'matsuge':
+      s+=ink(blob(cx,cy,r,r*1.03,rnd,.11,20),lw,false);
+      s+=ink(blob(px,py,r*.46,r*.50,rnd,.20,12),lw*.5,true);
+      for(let i=0;i<3;i++){
+        const a=-Math.PI/2+(i-1)*0.52;
+        s+=ink(seg(cx+Math.cos(a)*r*.98,cy+Math.sin(a)*r*1.0,
+                   cx+Math.cos(a)*r*1.52,cy+Math.sin(a)*r*1.55,rnd,r*.10),lw*.85,false);
+      } break;
+    case 'nico':
+      s+=ink(arc(cx,cy+r*.42,r*1.0,r*.92,Math.PI*1.06,Math.PI*1.94,rnd,.09,9),lw*1.05,false); break;
+    case 'nemui':
+      s+=ink(arc(cx,cy,r,r,Math.PI*0.02,Math.PI*0.98,rnd,.09,9),lw,false);
+      s+=ink(seg(cx-r*1.05,cy-r*.06,cx+r*1.05,cy-r*.06,rnd,r*.08),lw,false); break;
+    case 'guru':{
+      const p=[];const turns=2.35,steps=34;
+      for(let i=0;i<steps;i++){
+        const t=i/(steps-1),a=t*Math.PI*2*turns,rr=r*(.14+.92*t)*(1+(rnd()-.5)*.07);
+        p.push({x:cx+Math.cos(a)*rr,y:cy+Math.sin(a)*rr*.98});
+      }
+      s+=ink(smoothOpen(p),lw*.9,false); break;}
+    case 'kira':
+      s+=ink(blob(px,py,r*.60,r*.64,rnd,.16,14),lw*.6,true);
+      s+=ink(seg(cx+r*.55,cy-r*1.25,cx+r*.55,cy-r*.45,rnd,r*.07),lw*.6,false);
+      s+=ink(seg(cx+r*.18,cy-r*.85,cx+r*.92,cy-r*.85,rnd,r*.07),lw*.6,false); break;
+    case 'batsu':
+      s+=ink(seg(cx-r*.85,cy-r*.85,cx+r*.85,cy+r*.85,rnd,r*.10),lw,false);
+      s+=ink(seg(cx+r*.85,cy-r*.85,cx-r*.85,cy+r*.85,rnd,r*.10),lw,false); break;
+  }
+  return s;
+}
+
+/* ============ おまけ ============ */
+const EARS=[{id:'none',label:'みみなし'},{id:'kuma',label:'くま'},{id:'usa',label:'うさぎ'},{id:'tare',label:'たれみみ'}];
+const CHEEKS=[{id:'none',label:'ほっぺなし'},{id:'nuri',label:'ほっぺ'}];
+const MOUTHS=[{id:'none',label:'くちなし'},{id:'ten',label:'てん'},{id:'nico',label:'にこ'},{id:'omega',label:'ω'}];
+
+function drawEars(kind,cx,cy,R,rnd,lw,sx){
+  if(kind==='none')return'';
+  let s='';const dx=R*.62*(sx||1);
+  for(const sign of [-1,1]){
+    const ex=cx+sign*dx;
+    if(kind==='kuma')      s+=ink(blob(ex,cy-R*.86,R*.26,R*.26,rnd,.14,14),lw,false);
+    else if(kind==='usa')  s+=ink(blob(ex,cy-R*1.12,R*.15,R*.42,rnd,.13,16),lw,false);
+    else if(kind==='tare') s+=ink(blob(ex+sign*R*.22,cy-R*.18,R*.19,R*.40,rnd,.14,16),lw,false);
+  }
+  return s;
+}
+function drawCheeks(kind,cx,cy,R,ey,rnd,lw,sx){
+  if(kind==='none')return'';
+  let s='';
+  for(const sign of [-1,1]){
+    const p=blob(cx+sign*R*.66*(sx||1), ey+R*.30, R*.15,R*.11,rnd,.20,12);
+    s+=`<path d="${p}" fill="var(--red)" opacity=".26"/>`;
+  }
+  return s;
+}
+function drawMouth(kind,cx,my,R,rnd,lw){
+  if(kind==='none')return'';
+  if(kind==='ten')  return ink(blob(cx,my,R*.045,R*.05,rnd,.2,10),lw*.6,true);
+  if(kind==='nico') return ink(arc(cx,my-R*.10,R*.16,R*.15,Math.PI*.18,Math.PI*.82,rnd,.10,8),lw*.85,false);
+  if(kind==='omega'){
+    let s=ink(arc(cx-R*.075,my-R*.03,R*.078,R*.075,Math.PI*.05,Math.PI*.95,rnd,.10,7),lw*.85,false);
+    s+=ink(arc(cx+R*.075,my-R*.03,R*.078,R*.075,Math.PI*.05,Math.PI*.95,rnd,.10,7),lw*.85,false);
+    return s;
+  }
+  return '';
+}
+
+/* ============ 顔まるごと ============ */
+function renderFace(o){
+  const rnd=mulberry32(o.seed);
+  const sx=(o.face==='tate')?.83:1;
+  let s='';
+  s+=drawEars(o.ears,o.cx,o.cy,o.R,rnd,o.lw,sx);
+  if(o.face!=='none') s+=ink(facePath(o.face,o.cx,o.cy,o.R,rnd),o.lw,false);
+  const ey=o.cy+o.vert*o.R;
+  const dx=o.spread*o.R*sx;
+  s+=drawCheeks(o.cheek,o.cx,o.cy,o.R,ey,rnd,o.lw,sx);
+  s+=drawEye(o.eyeL,o.cx-dx,ey,o.er*o.R,rnd,o.gLx,o.gLy,o.lw*.92);
+  s+=drawEye(o.eyeR,o.cx+dx,ey,o.er*o.R,rnd,o.gRx,o.gRy,o.lw*.92);
+  s+=drawMouth(o.mouth,o.cx,Math.min(ey+o.R*.42,o.cy+o.R*.60),o.R,rnd,o.lw);
+  return s;
+}
+
+/* ============ 状態 ============ */
+const V_STEPS=[-.30,-.17,-.04,.09,.22];        /* 目の高さ（顔の中心から） */
+const S_STEPS=[.20,.28,.36,.44,.53];           /* 目の間隔（片側） */
+const V_NAME=['たかめ','ややたかめ','まんなか','ややひくめ','ひくめ'];
+const S_NAME=['せまめ','ややせまめ','ふつう','ややひろめ','ひろめ'];
+/* 瞳を描く目（＝視線が見える目）だけ、寄り目が意味を持つ */
+const HAS_PUPIL={maru:1,ten:1,matsuge:1,kira:1};
+function isCross(){ return HAS_PUPIL[st.eyeL] && HAS_PUPIL[st.eyeR] && st.gLx>.3 && st.gRx<-.3; }
+function gazeName(){
+  if(st.gLx===0&&st.gLy===0&&st.gRx===0&&st.gRy===0) return 'まっすぐ';
+  if(isCross()) return 'よりめ';
+  const x=(st.gLx+st.gRx)/2, y=(st.gLy+st.gRy)/2;
+  const v=y<-.3?'うえ':(y>.3?'した':''), h=x<-.3?'ひだり':(x>.3?'みぎ':'');
+  return (v&&h)?('ななめ'+v):(v||h||'まんなか');
+}
+
+const MATRIX={
+  'hi-narrow'  :{ja:'はりきり',      en:'wide awake and ready'},
+  'hi-mid'     :{ja:'げんき',        en:'full of beans'},
+  'hi-wide'    :{ja:'なんでもたのしい',en:'easily amazed'},
+  'mid-narrow' :{ja:'キリッ',        en:'means business'},
+  'mid-mid'    :{ja:'ごきげん',      en:'just fine'},
+  'mid-wide'   :{ja:'おっとり',      en:'takes it easy'},
+  'lo-narrow'  :{ja:'たくらみ',      en:'up to something'},
+  'lo-mid'     :{ja:'しょんぼり',    en:'a bit down today'},
+  'lo-wide'    :{ja:'ぼんやり',      en:'off in a daydream'},
+};
+
+const st={ seed:12345, face:'maru', v:2, s:2, gLx:0, gLy:0, gRx:0, gRy:0,
+           eyeL:'maru', eyeR:'maru', ears:'none', cheek:'none', mouth:'none' };
+
+const CX=180, CY=170, R=104, ER=.168, LW=5.4;
+
+/* ============ 描画 ============ */
+const stage=document.getElementById('stage');
+function draw(){
+  stage.innerHTML=renderFace({
+    cx:CX,cy:CY,R:R,lw:LW,er:ER,seed:st.seed,face:st.face,
+    vert:V_STEPS[st.v],spread:S_STEPS[st.s],
+    gLx:st.gLx,gLy:st.gLy,gRx:st.gRx,gRy:st.gRy,
+    eyeL:st.eyeL,eyeR:st.eyeR,ears:st.ears,cheek:st.cheek,mouth:st.mouth
+  });
+  updateName();
+}
+function updateName(){
+  let n;
+  if(st.eyeL!==st.eyeR){ n={ja:'ちぐはぐ',en:'mixed feelings'}; }
+  else if(isCross()){ n={ja:'よりめ',en:'crossing them on purpose'}; }
+  else if(EYE_MOOD[st.eyeL]){ n=EYE_MOOD[st.eyeL]; }
+  else{
+    const vb=st.v<=1?'hi':(st.v>=3?'lo':'mid');
+    const sb=st.s<=1?'narrow':(st.s>=3?'wide':'mid');
+    n=MATRIX[vb+'-'+sb];
+  }
+  document.getElementById('nameJa').textContent=n.ja;
+  document.getElementById('nameEn').textContent=n.en;
+  document.getElementById('readout').textContent=
+    `たかさ ${V_NAME[st.v]} ・ あいだ ${S_NAME[st.s]} ・ しせん ${gazeName()}`;
+}
+
+/* ============ 操作 ============ */
+let mode=null,startPt=null,moved=0,pressTimer=null,longSide=null;
+function pt(e){
+  const r=stage.getBoundingClientRect();
+  return{x:(e.clientX-r.left)/r.width*360,y:(e.clientY-r.top)/r.height*340};
+}
+function inFace(p){return Math.hypot(p.x-CX,p.y-CY)<R*1.05}
+function nearest(arr,val){let bi=0,bd=1e9;arr.forEach((a,i)=>{const d=Math.abs(a-val);if(d<bd){bd=d;bi=i}});return bi}
+
+stage.addEventListener('pointerdown',e=>{
+  stage.setPointerCapture(e.pointerId);
+  const p=pt(e);startPt=p;moved=0;
+  const ey=CY+V_STEPS[st.v]*R, dx=S_STEPS[st.s]*R*(st.face==='tate'?.83:1);
+  const grab=Math.max(ER*R*1.25, 21);
+  const onEye=Math.hypot(p.x-(CX-dx),p.y-ey)<grab || Math.hypot(p.x-(CX+dx),p.y-ey)<grab;
+  /* 目と目のあいだは「寄り目ゾーン」として目の当たり判定より優先する */
+  const inGap=Math.abs(p.x-CX)<dx*.55 && Math.abs(p.y-ey)<R*.30;
+  const hit=onEye && !inGap;
+  mode=hit?'move':'gaze';
+  if(hit){
+    longSide=p.x<CX?'L':'R';
+    pressTimer=setTimeout(()=>{
+      if(moved<8){
+        const k=longSide==='L'?'eyeL':'eyeR';
+        st[k]=EYES[(EYES.findIndex(x=>x.id===st[k])+1)%EYES.length].id;
+        mode='done';draw();
+        if(navigator.vibrate)navigator.vibrate(8);
+      }
+    },480);
+  }
+  if(mode==='gaze'&&inFace(p))apply(p);
+});
+stage.addEventListener('pointermove',e=>{
+  if(!mode||mode==='done')return;
+  const p=pt(e);moved=Math.max(moved,Math.hypot(p.x-startPt.x,p.y-startPt.y));
+  if(moved>8&&pressTimer){clearTimeout(pressTimer);pressTimer=null}
+  if(mode==='gaze'||moved>5)apply(p);
+});
+stage.addEventListener('pointerup',e=>{
+  if(pressTimer){clearTimeout(pressTimer);pressTimer=null}
+  if(mode==='move'&&moved<8){       /* 目をタップ → 両目の形を変える */
+    const i=(EYES.findIndex(x=>x.id===st.eyeL)+1)%EYES.length;
+    st.eyeL=st.eyeR=EYES[i].id;draw();
+  }
+  if(mode==='gaze'&&moved<8&&startPt&&!inFace(startPt)){  /* 顔の外をタップ → まっすぐ */
+    st.gLx=st.gLy=st.gRx=st.gRy=0;draw();
+  }
+  mode=null;
+});
+stage.addEventListener('pointercancel',()=>{if(pressTimer)clearTimeout(pressTimer);mode=null});
+stage.addEventListener('contextmenu',e=>e.preventDefault());
+
+function apply(p){
+  if(mode==='move'){
+    const sx=(st.face==='tate')?.83:1;
+    st.v=nearest(V_STEPS,(p.y-CY)/R);
+    st.s=nearest(S_STEPS,Math.abs(p.x-CX)/R/sx);
+    draw();
+  }else if(mode==='gaze'){
+    const sx=(st.face==='tate')?.83:1;
+    const ey=CY+V_STEPS[st.v]*R, d=S_STEPS[st.s]*R*sx;
+    /* 左右の目が「それぞれ」その点を見る。
+       遠い点なら二本の視線はほぼ平行、近い点なら自然に寄る。 */
+    const aim=(ex)=>{
+      const a=Math.atan2(p.y-ey,p.x-ex);
+      const oct=Math.round(a/(Math.PI/4))*(Math.PI/4);
+      return [+Math.cos(oct).toFixed(3), +Math.sin(oct).toFixed(3)];
+    };
+    [st.gLx,st.gLy]=aim(CX-d);
+    [st.gRx,st.gRy]=aim(CX+d);
+    draw();
+  }
+}
+
+/* ============ 棚のUI ============ */
+function chipFace(f){
+  const rnd=mulberry32(7);
+  const body = f.id==='none'
+    ? `<circle cx="8.5" cy="13" r="2.6" fill="currentColor"/><circle cx="17.5" cy="13" r="2.6" fill="currentColor"/>`
+    : `<path d="${facePath(f.id,13,13,10,rnd)}" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>`;
+  return `<svg width="26" height="26" viewBox="0 0 26 26">${body}</svg>`;
+}
+const faceChips=document.getElementById('faceChips');
+FACES.forEach(f=>{
+  const b=document.createElement('button');
+  b.className='chip icon';b.innerHTML=chipFace(f);b.title=f.label;
+  b.setAttribute('aria-label','かお：'+f.label);
+  b.setAttribute('aria-pressed',String(f.id===st.face));
+  b.onclick=()=>{st.face=f.id;[...faceChips.children].forEach((c,i)=>c.setAttribute('aria-pressed',String(FACES[i].id===st.face)));draw()};
+  faceChips.appendChild(b);
+});
+
+const extraChips=document.getElementById('extraChips');
+function cycler(list,key){
+  const b=document.createElement('button');
+  b.className='chip';
+  const set=()=>{const cur=list.find(x=>x.id===st[key]);b.textContent=cur.label;
+    b.setAttribute('aria-pressed',String(st[key]!=='none'))};
+  b.onclick=()=>{const i=(list.findIndex(x=>x.id===st[key])+1)%list.length;st[key]=list[i].id;set();draw()};
+  set();return b;
+}
+extraChips.appendChild(cycler(EARS,'ears'));
+extraChips.appendChild(cycler(CHEEKS,'cheek'));
+extraChips.appendChild(cycler(MOUTHS,'mouth'));
+
+/* ============ ふるふる ============ */
+document.getElementById('shuffle').onclick=()=>{
+  st.seed=(Math.random()*1e6)|0;draw();
+  const sh=document.getElementById('sheet');
+  sh.classList.remove('shake');void sh.offsetWidth;sh.classList.add('shake');
+  if(tapeOn)makeTape();
+};
+
+/* ============ テープにする ============ */
+let tapeOn=false;
+const tapeSvg=document.getElementById('tape');
+document.getElementById('toTape').onclick=()=>{
+  tapeOn=true;document.getElementById('tapeArea').classList.add('on');
+  makeTape();document.getElementById('tapeArea').scrollIntoView({behavior:'smooth',block:'nearest'});
+};
+function tornEdge(rnd){
+  /* テープの外形：上下はほぼ直線、左右はビリッ */
+  const top=[],bot=[],W=400,T=26,B=106;
+  for(let i=0;i<=16;i++){const x=6+(W-12)*i/16;top.push({x,y:T+(rnd()-.5)*1.6})}
+  for(let i=16;i>=0;i--){const x=6+(W-12)*i/16;bot.push({x,y:B+(rnd()-.5)*1.6})}
+  const right=[],left=[];
+  for(let i=0;i<=7;i++){const y=T+(B-T)*i/7;right.push({x:W-6+(rnd()-.5)*9,y})}
+  for(let i=7;i>=0;i--){const y=T+(B-T)*i/7;left.push({x:6+(rnd()-.5)*9,y})}
+  const p=[...top,...right.slice(1),...bot.slice(1),...left.slice(1)];
+  return smoothClosed(p);
+}
+function makeTape(){
+  const rnd=mulberry32(st.seed^0x5bf03);
+  const outline=tornEdge(rnd);
+  let inner='';
+  const n=6, r=28;
+  for(let i=0;i<n;i++){
+    const cx=39+i*64.5;
+    const jv=Math.max(0,Math.min(4,st.v+(rnd()<.30?(rnd()<.5?-1:1):0)));
+    const js=Math.max(0,Math.min(4,st.s+(rnd()<.30?(rnd()<.5?-1:1):0)));
+    const rare=rnd()<.16;
+    const eye=rare?EYES[(EYES.findIndex(x=>x.id===st.eyeL)+1+((rnd()*3)|0))%EYES.length].id:st.eyeL;
+    inner+=`<g>${renderFace({
+      cx:cx,cy:64,R:r,lw:2.5,er:ER,seed:(st.seed+i*977)|0,face:st.face,
+      vert:V_STEPS[jv],spread:S_STEPS[js],
+      gLx:st.gLx,gLy:st.gLy,gRx:st.gRx,gRy:st.gRy,
+      eyeL:eye,eyeR:eye,ears:st.ears,cheek:st.cheek,mouth:st.mouth
+    })}</g>`;
+  }
+  /* 紙の繊維 */
+  let fiber='';
+  for(let i=0;i<26;i++){
+    const y=26+rnd()*80, x=6+rnd()*380, w=8+rnd()*40;
+    fiber+=`<line x1="${x.toFixed(1)}" y1="${y.toFixed(1)}" x2="${(x+w).toFixed(1)}" y2="${(y+ (rnd()-.5)*2).toFixed(1)}" stroke="rgba(38,33,29,.07)" stroke-width="1"/>`;
+  }
+  tapeSvg.innerHTML=
+   `<defs><clipPath id="tclip"><path d="${outline}"/></clipPath></defs>
+    <g transform="rotate(-1.4 200 66)">
+      <path d="${outline}" fill="var(--ecru)" opacity=".95"/>
+      <g clip-path="url(#tclip)">${fiber}${inner}</g>
+      <path d="${outline}" fill="none" stroke="rgba(38,33,29,.13)" stroke-width="1"/>
+    </g>`;
+}
+
+draw();
+</script>
+</body>
+</html>
