@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>hige lab | maskingtape</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&family=Yomogi&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#E3DCCD;      /* desk */
+    --sheet:#F3EEE3;      /* drawing paper */
+    --ink:#26211D;        /* brush-pen black */
+    --soft:#8B8175;       /* secondary text */
+    --ecru:#F4E0C4;       /* the maskingtape ecru */
+    --red:#BC4D38;        /* vermilion */
+    --line:rgba(38,33,29,.14);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Zen Maru Gothic','Hiragino Maru Gothic ProN',sans-serif;
+    display:flex;justify-content:center;
+    padding:18px 12px 44px;
+  }
+  .wrap{width:100%;max-width:430px}
+
+  header{display:flex;align-items:baseline;gap:8px;margin-bottom:2px}
+  .brand{font-size:14px;font-weight:700;letter-spacing:.05em}
+  .ver{font-size:11px;color:var(--soft)}
+  .langbtn{
+    margin-left:auto;border:1.5px solid var(--line);background:transparent;border-radius:999px;
+    padding:4px 11px;font-family:inherit;font-size:11px;font-weight:700;color:var(--soft);
+    cursor:pointer;letter-spacing:.04em;transition:background .14s ease,color .14s ease;
+  }
+  .langbtn:hover{background:rgba(38,33,29,.05);color:var(--ink)}
+  h1{font-family:'Yomogi',cursive;font-size:27px;margin:2px 0 0;font-weight:400;letter-spacing:.02em}
+  h1 small{font-family:'Zen Maru Gothic',sans-serif;font-size:12px;color:var(--soft);letter-spacing:.14em;margin-left:8px;font-weight:500}
+  .lede{font-size:12.5px;line-height:1.85;color:var(--soft);margin:8px 0 12px}
+
+  .sheet{
+    position:relative;background:var(--sheet);border-radius:3px;
+    box-shadow:0 3px 14px rgba(38,33,29,.13), inset 0 0 0 1px rgba(38,33,29,.05);
+    overflow:hidden;
+  }
+  .sheet::after{
+    content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
+    background-image:radial-gradient(rgba(38,33,29,.10) .5px, transparent .6px);
+    background-size:4px 4px;
+  }
+  .sheet.shake{animation:shake .42s cubic-bezier(.36,.07,.19,.97)}
+  @keyframes shake{
+    10%,90%{transform:translateX(-1.5px) rotate(-.25deg)}
+    30%,70%{transform:translateX(2.5px) rotate(.35deg)}
+    50%{transform:translateX(-2.5px) rotate(-.3deg)}
+  }
+  #stage{display:block;width:100%;height:auto;touch-action:none;cursor:grab}
+  #stage:active{cursor:grabbing}
+
+  .name{
+    display:flex;align-items:baseline;justify-content:center;gap:10px;flex-wrap:wrap;
+    margin:14px 0 2px;min-height:34px;
+  }
+  .name b{font-family:'Yomogi',cursive;font-weight:400;font-size:26px;color:var(--red);
+    letter-spacing:.05em;line-height:1.15;text-align:center}
+  @media (max-width:380px){.name b{font-size:22px}}
+  .name span{font-size:11.5px;color:var(--soft);letter-spacing:.05em}
+  .readout{text-align:center;font-size:11px;color:var(--soft);letter-spacing:.04em;margin-bottom:14px}
+
+  .shelf{margin-bottom:12px}
+  .shelf h2{
+    font-size:10.5px;font-weight:700;color:var(--soft);letter-spacing:.16em;
+    margin:0 0 6px;text-transform:uppercase;
+  }
+  .chips{display:flex;gap:7px;flex-wrap:wrap}
+  .chip{
+    border:1.5px solid var(--line);background:transparent;border-radius:999px;
+    padding:7px 13px;font-family:inherit;font-size:12.5px;font-weight:500;color:var(--ink);
+    cursor:pointer;transition:background .14s ease,border-color .14s ease,transform .1s ease;
+  }
+  .chip:hover{background:rgba(38,33,29,.045)}
+  .chip:active{transform:scale(.95)}
+  .chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--sheet)}
+  .chip svg{display:block}
+  .chip.icon{padding:6px 10px;line-height:0}
+
+  .actions{display:flex;gap:9px;margin-top:16px}
+  .btn{
+    flex:1;border:1.5px solid var(--ink);background:transparent;border-radius:2px;
+    padding:13px 10px;font-family:inherit;font-size:13.5px;font-weight:700;color:var(--ink);
+    cursor:pointer;letter-spacing:.04em;transition:background .14s ease,transform .1s ease;
+  }
+  .btn:hover{background:rgba(38,33,29,.05)}
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{background:var(--ink);color:var(--sheet)}
+  .btn.primary:hover{background:#3a332d}
+  .btn small{display:block;font-weight:500;font-size:10.5px;opacity:.7;margin-top:2px;letter-spacing:.02em}
+
+  .tape-area{margin-top:22px;padding-top:18px;border-top:1px dashed var(--line);display:none}
+  .tape-area.on{display:block}
+  .tape-area h2{font-family:'Yomogi',cursive;font-weight:400;font-size:18px;margin:0 0 3px}
+  .tape-area p{font-size:12px;line-height:1.8;color:var(--soft);margin:0 0 12px}
+  #tape{display:block;width:100%;height:auto;filter:drop-shadow(0 2px 5px rgba(38,33,29,.18))}
+
+  .hint{font-size:11.5px;line-height:1.8;color:var(--soft);margin-top:18px;padding-top:14px;border-top:1px dashed var(--line)}
+  .hint b{color:var(--ink);font-weight:700}
+
+  :focus-visible{outline:2px solid var(--red);outline-offset:2px}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="brand">maskingtape</span><span class="ver">mock &mdash; hige lab</span>
+    <button class="langbtn" id="langBtn" type="button"></button>
+  </header>
+  <h1><span id="h1main"></span><small id="h1sub"></small></h1>
+  <p class="lede" id="lede"></p>
+
+  <div class="sheet" id="sheet">
+    <svg id="stage" viewBox="0 0 360 340" role="img"></svg>
+  </div>
+
+  <div class="name"><b id="nameMain"></b><span id="nameSub"></span></div>
+  <div class="readout" id="readout"></div>
+
+  <div class="shelf">
+    <h2 id="hHige"></h2>
+    <div class="chips" id="higeChips"></div>
+  </div>
+
+  <div class="shelf">
+    <h2 id="hFace"></h2>
+    <div class="chips" id="faceChips"></div>
+  </div>
+
+  <div class="shelf">
+    <h2 id="hExtra"></h2>
+    <div class="chips" id="extraChips"></div>
+  </div>
+
+  <div class="actions">
+    <button class="btn" id="shuffle"></button>
+    <button class="btn primary" id="toTape"></button>
+  </div>
+
+  <div class="tape-area" id="tapeArea">
+    <h2 id="tapeH"></h2>
+    <p id="tapeP"></p>
+    <svg id="tape" viewBox="0 0 400 132"></svg>
+  </div>
+
+  <p class="hint" id="hint"></p>
+</div>
+
+<script>
+/* ============ random ============ */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+/* ============ smoothing ============ */
+function smoothClosed(p){
+  const n=p.length;let d=`M ${p[0].x.toFixed(2)} ${p[0].y.toFixed(2)}`;
+  for(let i=0;i<n;i++){
+    const a=p[(i-1+n)%n],b=p[i],c=p[(i+1)%n],e=p[(i+2)%n];
+    d+=` C ${(b.x+(c.x-a.x)/6).toFixed(2)} ${(b.y+(c.y-a.y)/6).toFixed(2)} ${(c.x-(e.x-b.x)/6).toFixed(2)} ${(c.y-(e.y-b.y)/6).toFixed(2)} ${c.x.toFixed(2)} ${c.y.toFixed(2)}`;
+  }
+  return d+" Z";
+}
+function smoothOpen(p){
+  const n=p.length;let d=`M ${p[0].x.toFixed(2)} ${p[0].y.toFixed(2)}`;
+  for(let i=0;i<n-1;i++){
+    const a=p[Math.max(0,i-1)],b=p[i],c=p[i+1],e=p[Math.min(n-1,i+2)];
+    d+=` C ${(b.x+(c.x-a.x)/6).toFixed(2)} ${(b.y+(c.y-a.y)/6).toFixed(2)} ${(c.x-(e.x-b.x)/6).toFixed(2)} ${(c.y-(e.y-b.y)/6).toFixed(2)} ${c.x.toFixed(2)} ${c.y.toFixed(2)}`;
+  }
+  return d;
+}
+function blob(cx,cy,rx,ry,rnd,amp,N){
+  N=N||24;const p=[];
+  for(let i=0;i<N;i++){
+    const a=i/N*Math.PI*2-Math.PI/2, w=1+(rnd()-.5)*amp;
+    p.push({x:cx+Math.cos(a)*rx*w, y:cy+Math.sin(a)*ry*w});
+  }
+  return smoothClosed(p);
+}
+function arc(cx,cy,rx,ry,a0,a1,rnd,amp,N){
+  N=N||9;const p=[];
+  for(let i=0;i<N;i++){
+    const t=i/(N-1),a=a0+(a1-a0)*t,w=1+(rnd()-.5)*amp;
+    p.push({x:cx+Math.cos(a)*rx*w, y:cy+Math.sin(a)*ry*w});
+  }
+  return smoothOpen(p);
+}
+function seg(x1,y1,x2,y2,rnd,amp){
+  const p=[];for(let i=0;i<5;i++){const t=i/4;
+    p.push({x:x1+(x2-x1)*t+(rnd()-.5)*amp,y:y1+(y2-y1)*t+(rnd()-.5)*amp});}
+  return smoothOpen(p);
+}
+function ink(d,w,fill){
+  const f=fill?'var(--ink)':'none';
+  return `<path d="${d}" fill="${f}" stroke="var(--ink)" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`+
+         `<path d="${d}" fill="none" stroke="var(--ink)" stroke-width="${(w*.5).toFixed(2)}" stroke-linecap="round" stroke-linejoin="round" opacity=".38" transform="translate(.8,-.6)"/>`;
+}
+
+/* ============ face outlines ============ */
+const FACES=[{id:'maru'},{id:'onigiri'},{id:'shikaku'},{id:'tate'}];
+function facePath(type,cx,cy,R,rnd){
+  const N=30,p=[];
+  let sx=1,sy=1;
+  if(type==='tate'){sx=.83;sy=1.08}
+  if(type==='shikaku'){sx=1.0;sy=.95}
+  for(let i=0;i<N;i++){
+    const a=i/N*Math.PI*2-Math.PI/2;
+    let r=1;
+    if(type==='onigiri') r=1-0.11*Math.cos(3*(a+Math.PI/2));
+    if(type==='shikaku'){
+      const k=4.2,den=Math.pow(Math.pow(Math.abs(Math.cos(a)),k)+Math.pow(Math.abs(Math.sin(a)),k),1/k);
+      r=0.97/den;
+    }
+    const w=1+(rnd()-.5)*.055;
+    p.push({x:cx+Math.cos(a)*R*sx*r*w, y:cy+Math.sin(a)*R*sy*r*w});
+  }
+  return smoothClosed(p);
+}
+
+/* ============ moustaches ============ */
+const HIGES=[{id:'kurun'},{id:'chobi'},{id:'moja'},{id:'jori'},{id:'nyan'},{id:'chokon'}];
+/* one half of the curled moustache.
+   curl: -2 (drooping) .. +2 (curled up), lenT: 0..1 */
+function kurunSide(cx,my,R,sd,curl,lenT,rnd,lw){
+  const L=R*(0.26+0.30*lenT);
+  const hook=Math.abs(curl)/2;
+  const top=[],bot=[];
+  const N=9;
+  for(let i=0;i<=N;i++){
+    const t=i/N;
+    const x=cx+sd*(R*0.015+L*t) - sd*L*0.34*hook*Math.pow(t,3);
+    const belly=my + R*0.055*Math.sin(t*Math.PI)*(1-Math.abs(curl)*.18);
+    const bend=-curl*R*0.115*Math.pow(t,2.0);
+    const y=belly+bend+(rnd()-.5)*R*0.014;
+    const w=Math.max(lw*(1.25-0.92*t), lw*0.34);
+    top.push({x,y:y-w/2}); bot.push({x,y:y+w/2});
+  }
+  return smoothClosed(top.concat(bot.reverse()));
+}
+function cy0(o){return o._cy}
+function drawHige(o,cx,my,R,rnd,lw){
+  const t=o.hige;let s='';
+  if(t==='kurun'){
+    s+=`<path d="${kurunSide(cx,my,R,-1,o.curlL,o.lenT,rnd,lw*1.35)}" fill="var(--ink)"/>`;
+    s+=`<path d="${kurunSide(cx,my,R, 1,o.curlR,o.lenT,rnd,lw*1.35)}" fill="var(--ink)"/>`;
+  }else if(t==='chobi'){
+    s+=ink(blob(cx,my+R*.005,R*(.15+.05*o.lenT),R*.048,rnd,.16,16),lw*.5,true);
+  }else if(t==='moja'){
+    const cy2=my+R*.30, rx=R*(.52+.20*o.lenT), ry=R*(.30+.16*o.lenT);
+    const p=[];const N=26;
+    for(let i=0;i<N;i++){
+      const a=i/N*Math.PI*2-Math.PI/2;
+      const scal=1+0.10*Math.sin(a*7+1.3)+(rnd()-.5)*.10;
+      p.push({x:cx+Math.cos(a)*rx*scal,y:cy2+Math.sin(a)*ry*scal});
+    }
+    s+=`<path d="${smoothClosed(p)}" fill="var(--sheet)" stroke="var(--ink)" stroke-width="${lw}" stroke-linejoin="round"/>`;
+    if(o.mouth==='none') s+=ink(arc(cx,cy2-ry*.15,rx*.34,ry*.36,Math.PI*.15,Math.PI*.85,rnd,.14,7),lw*.6,false);
+    o._mouthY=cy2-ry*.12;   /* the mouth goes in the gap in the beard */
+  }else if(t==='jori'){
+    const n=22+((o.lenT*14)|0);
+    for(let i=0;i<n;i++){
+      const u=(rnd()*2-1);                       /* -1..1 across the chin */
+      const x=cx+u*R*(.55+.12*o.lenT);
+      const yBase=my+R*.22+Math.pow(Math.abs(u),1.6)*(-R*.16); /* follow the jawline */
+      const y=yBase+rnd()*R*.26*(1-Math.abs(u)*.55);
+      s+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(lw*.42).toFixed(2)}" fill="var(--ink)" opacity=".85"/>`;
+    }
+  }else if(t==='nyan'){
+    for(const sd of[-1,1]){
+      const curl=sd<0?o.curlL:o.curlR;
+      for(let i=0;i<3;i++){
+        const y0=my-R*.06+i*R*.10;
+        const x0=cx+sd*R*.34;
+        const L=R*(.42+.26*o.lenT);
+        const dy=-curl*R*.07-(i-1)*R*.045;
+        s+=ink(seg(x0,y0,x0+sd*L,y0+dy,rnd,R*.02),lw*.62,false);
+      }
+    }
+  }else if(t==='chokon'){
+    const by=cy0(o)+R*.97;
+    const w=R*(.10+.05*o.lenT), h=R*(.16+.10*o.lenT);
+    const tri=smoothClosed([
+      {x:cx-w,y:by-h*.35},{x:cx-w*.35,y:by-h*.15},
+      {x:cx,y:by+h*.65},{x:cx+w*.35,y:by-h*.15},{x:cx+w,y:by-h*.35},
+      {x:cx,y:by-h*.55}]);
+    s+=ink(tri,lw*.6,true);
+  }
+  return s;
+}
+
+/* ============ extras ============ */
+const EYES=[{id:'maru'},{id:'ten'},{id:'nico'},{id:'nemui'}];
+const EARS=[{id:'none'},{id:'kuma'},{id:'usa'},{id:'tare'}];
+const CHEEKS=[{id:'none'},{id:'nuri'}];
+const MOUTHS=[{id:'none'},{id:'nico'},{id:'ten'},{id:'omega'},{id:'aan'}];
+
+function drawEyes(kind,cx,ey,R,rnd,lw,sx){
+  const dx=R*.36*(sx||1), r=R*.145;
+  let s='';
+  for(const sd of[-1,1]){
+    const ex=cx+sd*dx;
+    if(kind==='ten') s+=ink(blob(ex,ey,r*.60,r*.64,rnd,.16,12),lw*.5,true);
+    else if(kind==='maru'){
+      s+=ink(blob(ex,ey,r,r*1.03,rnd,.11,18),lw*.9,false);
+      s+=ink(blob(ex,ey,r*.46,r*.50,rnd,.20,12),lw*.45,true);
+    }else if(kind==='nico') s+=ink(arc(ex,ey+r*.42,r,r*.92,Math.PI*1.06,Math.PI*1.94,rnd,.09,9),lw*.95,false);
+    else if(kind==='nemui'){
+      s+=ink(arc(ex,ey,r,r,Math.PI*0.02,Math.PI*0.98,rnd,.09,9),lw*.9,false);
+      s+=ink(seg(ex-r*1.05,ey-r*.06,ex+r*1.05,ey-r*.06,rnd,r*.08),lw*.9,false);
+    }
+  }
+  return s;
+}
+function drawMouth(kind,cx,my,R,rnd,lw){
+  if(kind==='none')return'';
+  if(kind==='ten')  return ink(blob(cx,my,R*.045,R*.05,rnd,.2,10),lw*.6,true);
+  if(kind==='nico') return ink(arc(cx,my-R*.10,R*.15,R*.14,Math.PI*.18,Math.PI*.82,rnd,.10,8),lw*.85,false);
+  if(kind==='aan')  return ink(blob(cx,my+R*.02,R*.075,R*.095,rnd,.16,14),lw*.6,true);
+  if(kind==='omega'){
+    let s=ink(arc(cx-R*.070,my-R*.03,R*.074,R*.070,Math.PI*.05,Math.PI*.95,rnd,.10,7),lw*.85,false);
+    s+=ink(arc(cx+R*.070,my-R*.03,R*.074,R*.070,Math.PI*.05,Math.PI*.95,rnd,.10,7),lw*.85,false);
+    return s;
+  }
+  return '';
+}
+function drawEars(kind,cx,cy,R,rnd,lw,sx){
+  if(kind==='none')return'';
+  let s='';const dx=R*.62*(sx||1);
+  for(const sign of [-1,1]){
+    const ex=cx+sign*dx;
+    if(kind==='kuma')      s+=ink(blob(ex,cy-R*.86,R*.26,R*.26,rnd,.14,14),lw,false);
+    else if(kind==='usa')  s+=ink(blob(ex,cy-R*1.12,R*.15,R*.42,rnd,.13,16),lw,false);
+    else if(kind==='tare') s+=ink(blob(ex+sign*R*.22,cy-R*.18,R*.19,R*.40,rnd,.14,16),lw,false);
+  }
+  return s;
+}
+function drawCheeks(kind,cx,ey,R,rnd,sx){
+  if(kind==='none')return'';
+  let s='';
+  for(const sign of [-1,1]){
+    const p=blob(cx+sign*R*.66*(sx||1), ey+R*.26, R*.15,R*.11,rnd,.20,12);
+    s+=`<path d="${p}" fill="var(--red)" opacity=".26"/>`;
+  }
+  return s;
+}
+
+/* ============ the whole face ============ */
+function renderFace(o){
+  const rnd=mulberry32(o.seed);
+  const sx=(o.face==='tate')?.83:1;
+  let s='';
+  const ey=o.cy-o.R*0.16;              /* eye height, fixed */
+  const my=o.cy+o.R*0.30;              /* the moustache baseline */
+  s+=drawEars(o.ears,o.cx,o.cy,o.R,rnd,o.lw,sx);
+  s+=ink(facePath(o.face,o.cx,o.cy,o.R,rnd),o.lw,false);
+  s+=drawCheeks(o.cheek,o.cx,ey,o.R,rnd,sx);
+  s+=drawEyes(o.eyes,o.cx,ey,o.R,rnd,o.lw,sx);
+  /* nose */
+  s+=ink(blob(o.cx,o.cy+o.R*.10,o.R*.035,o.R*.030,rnd,.2,10),o.lw*.5,true);
+  o._cy=o.cy;o._mouthY=null;
+  s+=drawHige(o,o.cx,my,o.R,rnd,o.lw);
+  /* the mouth is drawn after the moustache so a bushy one cannot hide it */
+  s+=drawMouth(o.mouth,o.cx,o._mouthY!=null?o._mouthY:o.cy+o.R*.50,o.R,rnd,o.lw);
+  return s;
+}
+
+/* ============ language ============ */
+/* ?lang=ja / ?lang=en  — English is the default. */
+function readLang(){
+  const q=(new URLSearchParams(location.search).get('lang')||'').toLowerCase();
+  if(q==='ja'||q==='jp'||q==='japanese') return 'ja';
+  if(q==='en'||q==='english') return 'en';
+  return 'en';
+}
+let LANG=readLang();
+
+const T={
+  en:{
+    htmlLang:'en', title:'hige lab | maskingtape',
+    langBtn:'\u65e5\u672c\u8a9e', h1main:'hige lab', h1sub:'MOUSTACHE LAB',
+    lede:"A moustache keeps its personality in the <b>tips</b>.<br>Curl them up and it's rather pleased with itself. Let them droop and the day is over.",
+    stageAria:'moustache preview', tapeAria:'the finished masking tape',
+    hHige:'moustache roll', hFace:'face roll', hExtra:'extras',
+    shuffle:'shake it', shuffleSub:'every line drawn again',
+    toTape:'make it tape', toTapeSub:'siblings appear',
+    tapeH:'Your tape',
+    tapeP:'Same settings, but no two are drawn by the same hand. Where you tear it decides which faces come home with you.',
+    hint:"<b>How to play</b><br>"+
+      "<b>Drag the tips</b> of the moustache: up and down to bend them, outward to make them longer.<br>"+
+      "Bend <b>one side only</b> for a smirk.<br>"+
+      "<b>Drag the middle</b> and both sides move together.<br>"+
+      "<b>Tap</b> the moustache to change its type.<br>"+
+      "<b>Tap</b> the paper outside the face to straighten it out again.",
+    readout:(len,l,r)=>`length ${len} \u00b7 left ${l} \u00b7 right ${r}`,
+    curl:['drooping','a bit droopy','straight','a bit curled','curled up'],
+    len:['short','a bit short','normal','a bit long','long'],
+    faceAria:(l)=>'face: '+l,
+    HIGES:{kurun:'curled',chobi:'chobi',moja:'bushy',jori:'stubble',nyan:'whiskers',chokon:'tuft'},
+    FACES:{maru:'round',onigiri:'onigiri',shikaku:'square',tate:'tall'},
+    EYES:{maru:'round eyes',ten:'dot eyes',nico:'smiling eyes',nemui:'sleepy eyes'},
+    EARS:{none:'no ears',kuma:'bear',usa:'bunny',tare:'floppy'},
+    CHEEKS:{none:'no blush',nuri:'blush'},
+    MOUTHS:{none:'no mouth',nico:'smile',ten:'dot',omega:'\u03c9',aan:'open'}
+  },
+  ja:{
+    htmlLang:'ja', title:'\u3072\u3052\u30e9\u30dc | maskingtape',
+    langBtn:'English', h1main:'\u3072\u3052\u30e9\u30dc', h1sub:'HIGE LAB',
+    lede:'\u30d2\u30b2\u306e\u6027\u683c\u306f<b>\u5148\u3063\u307d</b>\u306b\u5bbf\u308a\u307e\u3059\u3002<br>\u304f\u308b\u3093\u3068\u4e0a\u3092\u5411\u3051\u3070\u5f97\u610f\u3052\u306b\u3001\u3060\u3089\u3093\u3068\u4e0b\u304c\u308c\u3070\u4eca\u65e5\u306f\u304a\u3057\u307e\u3044\u3002',
+    stageAria:'\u30d2\u30b2\u306e\u30d7\u30ec\u30d3\u30e5\u30fc', tapeAria:'\u3067\u304d\u3042\u304c\u3063\u305f\u30de\u30b9\u30ad\u30f3\u30b0\u30c6\u30fc\u30d7',
+    hHige:'\u3072\u3052\u30ed\u30fc\u30eb', hFace:'\u304b\u304a\u30ed\u30fc\u30eb', hExtra:'\u304a\u307e\u3051',
+    shuffle:'\u3075\u308b\u3075\u308b', shuffleSub:'\u7dda\u3092\u5f15\u304d\u306a\u304a\u3059',
+    toTape:'\u30c6\u30fc\u30d7\u306b\u3059\u308b', toTapeSub:'\u304d\u3087\u3046\u3060\u3044\u304c\u751f\u307e\u308c\u308b',
+    tapeH:'\u3067\u304d\u305f\u30c6\u30fc\u30d7',
+    tapeP:'\u540c\u3058\u8a2d\u5b9a\u3067\u3082\u3001\u4e00\u4eba\u305a\u3064\u624b\u304c\u9055\u3044\u307e\u3059\u3002\u3069\u3053\u3067\u5207\u308b\u304b\u3067\u3001\u9023\u308c\u3066\u5e30\u308b\u9854\u304c\u6c7a\u307e\u308a\u307e\u3059\u3002',
+    hint:'<b>\u3042\u305d\u3073\u304b\u305f</b><br>'+
+      '\u30d2\u30b2\u306e<b>\u5148\u3063\u307d</b>\u3092\u30c9\u30e9\u30c3\u30b0\u3059\u308b\u3068\u3001\u4e0a\u4e0b\u306b\u66f2\u304c\u3063\u3066\u3001\u9577\u3055\u3082\u5909\u308f\u308a\u307e\u3059\u3002<br>'+
+      '<b>\u7247\u65b9\u3060\u3051</b>\u66f2\u3052\u308c\u3070\u3001\u306b\u3084\u308a\u3002<br>'+
+      '\u30d2\u30b2\u306e<b>\u307e\u3093\u306a\u304b</b>\u3092\u30c9\u30e9\u30c3\u30b0\u3059\u308b\u3068\u3001\u4e21\u5074\u3044\u3063\u3057\u3087\u306b\u52d5\u304d\u307e\u3059\u3002<br>'+
+      '\u30d2\u30b2\u3092<b>\u30bf\u30c3\u30d7</b>\u3059\u308b\u3068\u7a2e\u985e\u304c\u5909\u308f\u308a\u307e\u3059\u3002<br>'+
+      '\u9854\u306e\u5916\u3092<b>\u3061\u3087\u3093\u3068\u30bf\u30c3\u30d7</b>\u3059\u308b\u3068\u3001\u3074\u3093\u3068\u623b\u308a\u307e\u3059\u3002',
+    readout:(len,l,r)=>`\u306a\u304c\u3055 ${len} \u30fb \u3072\u3060\u308a ${l} \u30fb \u307f\u304e ${r}`,
+    curl:['\u3060\u3089\u3093','\u3084\u3084\u3060\u3089\u3093','\u307e\u3063\u3059\u3050','\u3084\u3084\u304f\u308b\u3093','\u304f\u308b\u3093'],
+    len:['\u307f\u3058\u304b\u3081','\u3084\u3084\u307f\u3058\u304b\u3081','\u3075\u3064\u3046','\u3084\u3084\u306a\u304c\u3081','\u306a\u304c\u3081'],
+    faceAria:(l)=>'\u304b\u304a\uff1a'+l,
+    HIGES:{kurun:'\u304f\u308b\u3093',chobi:'\u3061\u3087\u3073',moja:'\u3082\u3058\u3083\u3082\u3058\u3083',jori:'\u3058\u3087\u308a\u3058\u3087\u308a',nyan:'\u306b\u3083\u3093\u3072\u3052',chokon:'\u3061\u3087\u3053\u3093'},
+    FACES:{maru:'\u307e\u308b',onigiri:'\u304a\u306b\u304e\u308a',shikaku:'\u3057\u304b\u304f',tate:'\u305f\u3066\u306a\u304c'},
+    EYES:{maru:'\u3081\uff1a\u307e\u308b',ten:'\u3081\uff1a\u3066\u3093',nico:'\u3081\uff1a\u306b\u3053',nemui:'\u3081\uff1a\u306d\u3080\u3044'},
+    EARS:{none:'\u307f\u307f\u306a\u3057',kuma:'\u304f\u307e',usa:'\u3046\u3055\u304e',tare:'\u305f\u308c\u307f\u307f'},
+    CHEEKS:{none:'\u307b\u3063\u307a\u306a\u3057',nuri:'\u307b\u3063\u307a'},
+    MOUTHS:{none:'\u304f\u3061\u306a\u3057',nico:'\u306b\u3053',ten:'\u3066\u3093',omega:'\u03c9',aan:'\u3042\u30fc\u3093'}
+  }
+};
+function t(){return T[LANG]}
+
+/* the name a moustache gives itself: kana for JA, romaji + gloss for EN */
+const HIGE_MOOD={
+  chobi :{ja:'\u3061\u3087\u3073',        romaji:'CHOBI',    gloss:'small but proud'},
+  moja  :{ja:'\u3082\u3058\u3083\u3082\u3058\u3083', romaji:'MOJAMOJA', gloss:'big and fluffy'},
+  jori  :{ja:'\u3058\u3087\u308a\u3058\u3087\u308a', romaji:'JORIJORI', gloss:'freshly scruffy'},
+  nyan  :{ja:'\u306b\u3083\u3093',        romaji:'NYAN',     gloss:'those are whiskers, actually'},
+  chokon:{ja:'\u3061\u3087\u3053\u3093', romaji:'CHOKON',   gloss:'perched neatly'}
+};
+const NIYARI={ja:'\u306b\u3084\u308a', romaji:'NIYARI', gloss:'smirking, just a bit'};
+const MATRIX={
+  'up-short'  :{ja:'\u304a\u3059\u307e\u3057',        romaji:'OSUMASHI',  gloss:'prim and proper'},
+  'up-mid'    :{ja:'\u308b\u3093\u308b\u3093',        romaji:'RUNRUN',    gloss:'humming a little tune'},
+  'up-long'   :{ja:'\u306f\u3044\u304b\u3089',        romaji:'HAIKARA',   gloss:'dashing, the old way'},
+  'flat-short':{ja:'\u304d\u3061\u3087\u3046\u3081\u3093', romaji:'KICHOMEN', gloss:'everything in its place'},
+  'flat-mid'  :{ja:'\u304a\u3068\u306a',               romaji:'OTONA',     gloss:'very grown-up today'},
+  'flat-long' :{ja:'\u3069\u3063\u3057\u308a',        romaji:'DOSSHIRI',  gloss:'calm and steady'},
+  'down-short':{ja:'\u3068\u307b\u307b',               romaji:'TOHOHO',    gloss:'oh well'},
+  'down-mid'  :{ja:'\u3057\u3085\u3093',               romaji:'SHUN',      gloss:'a little deflated'},
+  'down-long' :{ja:'\u304a\u3064\u304b\u308c',        romaji:'OTSUKARE',  gloss:'it has been a long day'}
+};
+
+/* ============ state ============ */
+const CURL_STEPS=[-2,-1,0,1,2];
+const LEN_STEPS=[0,.25,.5,.75,1];
+
+const st={ seed:24601, face:'maru', hige:'kurun',
+           curlL:1, curlR:1, len:2,
+           eyes:'maru', ears:'none', cheek:'none', mouth:'nico' };
+Object.defineProperty(st,'lenT',{get(){return LEN_STEPS[st.len]}});
+
+const CX=180, CY=158, R=104, LW=5.4;
+
+/* ============ drawing ============ */
+const stage=document.getElementById('stage');
+function draw(){
+  stage.innerHTML=renderFace({
+    cx:CX,cy:CY,R:R,lw:LW,seed:st.seed,face:st.face,hige:st.hige,
+    curlL:st.curlL,curlR:st.curlR,lenT:st.lenT,
+    eyes:st.eyes,ears:st.ears,cheek:st.cheek,mouth:st.mouth
+  });
+  updateName();
+}
+function curlBand(c){return c>=1?'up':(c<=-1?'down':'flat')}
+function pickName(){
+  const oneSided=(st.curlL*st.curlR<=0)&&(Math.abs(st.curlL-st.curlR)>=2);
+  if(st.hige!=='kurun'&&st.hige!=='nyan') return HIGE_MOOD[st.hige];
+  if(st.hige==='nyan') return HIGE_MOOD.nyan;
+  if(oneSided) return NIYARI;
+  const avg=(st.curlL+st.curlR)/2;
+  const lb=st.len<=1?'short':(st.len>=3?'long':'mid');
+  return MATRIX[curlBand(avg)+'-'+lb];
+}
+function updateName(){
+  const n=pickName();
+  document.getElementById('nameMain').textContent = (LANG==='ja') ? n.ja : n.romaji;
+  document.getElementById('nameSub').textContent  = n.gloss;
+  const cn=c=>t().curl[Math.max(0,Math.min(4,c+2))];
+  document.getElementById('readout').textContent=
+    t().readout(t().len[st.len], cn(st.curlL), cn(st.curlR));
+}
+
+/* ============ input ============ */
+let mode=null,startPt=null,moved=0;
+function pt(e){
+  const r=stage.getBoundingClientRect();
+  return{x:(e.clientX-r.left)/r.width*360,y:(e.clientY-r.top)/r.height*340};
+}
+function nearestIdx(arr,val){let bi=0,bd=1e9;arr.forEach((a,i)=>{const d=Math.abs(a-val);if(d<bd){bd=d;bi=i}});return bi}
+function inFace(p){return Math.hypot(p.x-CX,p.y-CY)<R*1.05}
+function higeY(){return CY+R*0.30}
+function tipX(){const L=R*(0.26+0.30*st.lenT);return R*0.015+L}
+
+stage.addEventListener('pointerdown',e=>{
+  stage.setPointerCapture(e.pointerId);
+  const p=pt(e);startPt=p;moved=0;
+  const my=higeY(), tx=tipX();
+  if(Math.abs(p.y-my)>R*.42){mode='out';return}
+  const dl=Math.hypot(p.x-(CX-tx),p.y-(my-st.curlL*R*0.115));
+  const dr=Math.hypot(p.x-(CX+tx),p.y-(my-st.curlR*R*0.115));
+  const grab=R*.30;
+  if(Math.abs(p.x-CX)<R*.22)      mode='both';
+  else if(dl<grab||p.x<CX)        mode='L';
+  else if(dr<grab||p.x>CX)        mode='R';
+  else mode='both';
+});
+stage.addEventListener('pointermove',e=>{
+  if(!mode||mode==='out')return;
+  const p=pt(e);moved=Math.max(moved,Math.hypot(p.x-startPt.x,p.y-startPt.y));
+  if(moved<6)return;
+  const my=higeY();
+  const curl=CURL_STEPS[nearestIdx(CURL_STEPS,-(p.y-my)/(R*0.115))];
+  const rawLen=(Math.abs(p.x-CX)/R-0.26)/0.30;
+  const len=nearestIdx(LEN_STEPS,Math.max(0,Math.min(1,rawLen)));
+  if(mode==='both'){st.curlL=st.curlR=curl;st.len=len}
+  else if(mode==='L'){st.curlL=curl;st.len=len}
+  else if(mode==='R'){st.curlR=curl;st.len=len}
+  draw();
+});
+stage.addEventListener('pointerup',()=>{
+  if(mode&&mode!=='out'&&moved<8){          /* tap the moustache: change its type */
+    st.hige=HIGES[(HIGES.findIndex(x=>x.id===st.hige)+1)%HIGES.length].id;
+    syncHige();draw();
+  }
+  if(mode==='out'&&moved<8&&startPt&&!inFace(startPt)){  /* tap outside: straighten */
+    st.curlL=st.curlR=0;draw();
+  }
+  mode=null;
+});
+stage.addEventListener('pointercancel',()=>{mode=null});
+stage.addEventListener('contextmenu',e=>e.preventDefault());
+
+/* ============ shelf UI ============ */
+const higeChips=document.getElementById('higeChips');
+const higeBtns=HIGES.map(h=>{
+  const b=document.createElement('button');
+  b.className='chip';
+  b.onclick=()=>{st.hige=h.id;syncHige();draw()};
+  higeChips.appendChild(b);return b;
+});
+function syncHige(){
+  higeBtns.forEach((b,i)=>{
+    b.textContent=t().HIGES[HIGES[i].id];
+    b.setAttribute('aria-pressed',String(HIGES[i].id===st.hige));
+  });
+}
+
+function chipFace(f){
+  const rnd=mulberry32(7);
+  return `<svg width="26" height="26" viewBox="0 0 26 26"><path d="${facePath(f.id,13,13,10,rnd)}" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>`;
+}
+const faceChips=document.getElementById('faceChips');
+const faceBtns=FACES.map(f=>{
+  const b=document.createElement('button');
+  b.className='chip icon';b.innerHTML=chipFace(f);
+  b.onclick=()=>{st.face=f.id;syncFace();draw()};
+  faceChips.appendChild(b);return b;
+});
+function syncFace(){
+  faceBtns.forEach((b,i)=>{
+    const label=t().FACES[FACES[i].id];
+    b.title=label;b.setAttribute('aria-label',t().faceAria(label));
+    b.setAttribute('aria-pressed',String(FACES[i].id===st.face));
+  });
+}
+
+const extraChips=document.getElementById('extraChips');
+const cyclers=[];
+function cycler(list,key,dictName){
+  const b=document.createElement('button');
+  b.className='chip';
+  b.onclick=()=>{st[key]=list[(list.findIndex(x=>x.id===st[key])+1)%list.length].id;sync();draw()};
+  function sync(){
+    b.textContent=t()[dictName][st[key]];
+    b.setAttribute('aria-pressed',String(st[key]!==list[0].id));
+  }
+  cyclers.push(sync);extraChips.appendChild(b);return b;
+}
+cycler(MOUTHS,'mouth','MOUTHS');
+cycler(EYES,'eyes','EYES');
+cycler(EARS,'ears','EARS');
+cycler(CHEEKS,'cheek','CHEEKS');
+
+/* ============ shake it ============ */
+document.getElementById('shuffle').onclick=()=>{
+  st.seed=(Math.random()*1e6)|0;draw();
+  const sh=document.getElementById('sheet');
+  sh.classList.remove('shake');void sh.offsetWidth;sh.classList.add('shake');
+  if(tapeOn)makeTape();
+};
+
+/* ============ make it tape ============ */
+let tapeOn=false;
+const tapeSvg=document.getElementById('tape');
+document.getElementById('toTape').onclick=()=>{
+  tapeOn=true;document.getElementById('tapeArea').classList.add('on');
+  makeTape();document.getElementById('tapeArea').scrollIntoView({behavior:'smooth',block:'nearest'});
+};
+function tornEdge(rnd){
+  const top=[],bot=[],W=400,Tp=26,B=106;
+  for(let i=0;i<=16;i++){const x=6+(W-12)*i/16;top.push({x,y:Tp+(rnd()-.5)*1.6})}
+  for(let i=16;i>=0;i--){const x=6+(W-12)*i/16;bot.push({x,y:B+(rnd()-.5)*1.6})}
+  const right=[],left=[];
+  for(let i=0;i<=7;i++){const y=Tp+(B-Tp)*i/7;right.push({x:W-6+(rnd()-.5)*9,y})}
+  for(let i=7;i>=0;i--){const y=Tp+(B-Tp)*i/7;left.push({x:6+(rnd()-.5)*9,y})}
+  return smoothClosed([...top,...right.slice(1),...bot.slice(1),...left.slice(1)]);
+}
+function makeTape(){
+  const rnd=mulberry32(st.seed^0x5bf03);
+  const outline=tornEdge(rnd);
+  let inner='';
+  const n=6, r=28;
+  for(let i=0;i<n;i++){
+    const cx=39+i*64.5;
+    const jc=v=>Math.max(-2,Math.min(2,v+(rnd()<.30?(rnd()<.5?-1:1):0)));
+    const jl=Math.max(0,Math.min(4,st.len+(rnd()<.30?(rnd()<.5?-1:1):0)));
+    const rare=rnd()<.16;
+    const hige=rare?HIGES[(HIGES.findIndex(x=>x.id===st.hige)+1+((rnd()*3)|0))%HIGES.length].id:st.hige;
+    inner+=`<g>${renderFace({
+      cx:cx,cy:62,R:r,lw:2.5,seed:(st.seed+i*977)|0,face:st.face,hige:hige,
+      curlL:jc(st.curlL),curlR:jc(st.curlR),lenT:LEN_STEPS[jl],
+      eyes:st.eyes,ears:st.ears,cheek:st.cheek,mouth:st.mouth
+    })}</g>`;
+  }
+  let fiber='';
+  for(let i=0;i<26;i++){
+    const y=26+rnd()*80, x=6+rnd()*380, w=8+rnd()*40;
+    fiber+=`<line x1="${x.toFixed(1)}" y1="${y.toFixed(1)}" x2="${(x+w).toFixed(1)}" y2="${(y+(rnd()-.5)*2).toFixed(1)}" stroke="rgba(38,33,29,.07)" stroke-width="1"/>`;
+  }
+  tapeSvg.innerHTML=
+   `<defs><clipPath id="tclip"><path d="${outline}"/></clipPath></defs>
+    <g transform="rotate(-1.4 200 66)">
+      <path d="${outline}" fill="var(--ecru)" opacity=".95"/>
+      <g clip-path="url(#tclip)">${fiber}${inner}</g>
+      <path d="${outline}" fill="none" stroke="rgba(38,33,29,.13)" stroke-width="1"/>
+    </g>`;
+}
+
+/* ============ apply language ============ */
+function setText(id,v,html){const e=document.getElementById(id);if(html)e.innerHTML=v;else e.textContent=v}
+function applyLang(){
+  const d=t();
+  document.documentElement.lang=d.htmlLang;
+  document.title=d.title;
+  setText('langBtn',d.langBtn);
+  setText('h1main',d.h1main);setText('h1sub',d.h1sub);
+  setText('lede',d.lede,true);
+  stage.setAttribute('aria-label',d.stageAria);
+  tapeSvg.setAttribute('aria-label',d.tapeAria);
+  setText('hHige',d.hHige);setText('hFace',d.hFace);setText('hExtra',d.hExtra);
+  document.getElementById('shuffle').innerHTML=`${d.shuffle}<small>${d.shuffleSub}</small>`;
+  document.getElementById('toTape').innerHTML=`${d.toTape}<small>${d.toTapeSub}</small>`;
+  setText('tapeH',d.tapeH);setText('tapeP',d.tapeP);
+  setText('hint',d.hint,true);
+  syncHige();syncFace();cyclers.forEach(f=>f());
+  updateName();
+}
+document.getElementById('langBtn').onclick=()=>{
+  LANG=(LANG==='ja')?'en':'ja';
+  const u=new URL(location.href);
+  u.searchParams.set('lang',LANG);
+  history.replaceState(null,'',u);
+  applyLang();
+};
+
+applyLang();
+draw();
+</script>
+</body>
+</html>
