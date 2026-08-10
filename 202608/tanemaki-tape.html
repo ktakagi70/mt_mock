@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>たねまきテープ — maskingtape lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F3F0E7;
+    --desk:#E9E4D4;
+    --ink:#4C4A3F;
+    --ink-soft:#8B8878;
+    --tape:#FDFBF2;
+    --green:#6F8F58;
+    --pink:#E79AAC;
+    --red:#DF5A62;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;
+    display:flex;flex-direction:column;
+    min-height:100dvh;
+    overflow:hidden;
+    user-select:none;-webkit-user-select:none;
+  }
+
+  header{padding:18px 20px 10px;text-align:center}
+  .brand{font-size:11px;letter-spacing:.22em;color:var(--ink-soft)}
+  h1{font-size:24px;font-weight:900;letter-spacing:.08em;margin-top:2px}
+  h1 .dot{color:var(--pink)}
+  .hint{margin-top:6px;font-size:13px;color:var(--ink-soft);transition:opacity .8s}
+  .hint.hide{opacity:0}
+
+  main{flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 0 4px;min-height:0}
+  .desk{
+    position:relative;margin:0 12px;
+    background:var(--desk);
+    background-image:radial-gradient(rgba(76,74,63,.05) 1px, transparent 1.2px);
+    background-size:14px 14px;
+    border-radius:20px;padding:26px 0 14px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.6), 0 1px 3px rgba(76,74,63,.08);
+  }
+  svg#stage{display:block;width:100%;height:auto;touch-action:none;cursor:crosshair}
+  .desk.cutmode svg#stage{cursor:pointer}
+
+  .roller{
+    margin:10px 18px 0;height:34px;border-radius:17px;
+    background:#DFD9C6;
+    box-shadow:inset 0 2px 4px rgba(76,74,63,.18), inset 0 -1px 0 rgba(255,255,255,.5);
+    position:relative;overflow:hidden;touch-action:none;cursor:grab;
+  }
+  .roller:active{cursor:grabbing}
+  .roller .stitches{
+    position:absolute;inset:0;
+    background-image:radial-gradient(circle 2.2px, rgba(76,74,63,.35) 45%, transparent 55%);
+    background-size:22px 34px;background-position:0 50%;
+  }
+  .roller .label{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:11.5px;color:var(--ink-soft);letter-spacing:.12em;pointer-events:none;
+    background:linear-gradient(90deg, #DFD9C6 0%, transparent 22%, transparent 78%, #DFD9C6 100%);
+    transition:opacity .6s;
+  }
+  .roller.used .label{opacity:0}
+
+  footer{padding:12px 14px calc(14px + env(safe-area-inset-bottom))}
+  .tools{display:flex;gap:8px;justify-content:center;align-items:flex-end}
+  .packet{
+    flex:0 1 74px;background:var(--tape);border:none;border-radius:10px 10px 8px 8px;
+    padding:9px 4px 7px;font-family:inherit;font-size:12px;font-weight:700;color:var(--ink);
+    box-shadow:0 1.5px 0 rgba(76,74,63,.18);
+    display:flex;flex-direction:column;align-items:center;gap:4px;position:relative;
+    transition:transform .18s cubic-bezier(.2,1.6,.4,1), box-shadow .18s;cursor:pointer;
+  }
+  .packet::before{
+    content:"";position:absolute;top:-4px;left:8px;right:8px;height:5px;
+    background:linear-gradient(-45deg, transparent 33%, var(--tape) 33%),
+               linear-gradient(45deg, transparent 33%, var(--tape) 33%);
+    background-size:8px 5px;background-repeat:repeat-x;
+  }
+  .packet svg{width:26px;height:26px}
+  .packet.active{transform:translateY(-7px) rotate(-2deg);box-shadow:0 5px 10px rgba(76,74,63,.22)}
+  .packet.scissors.active{transform:translateY(-7px) rotate(4deg)}
+  .reset{
+    background:none;border:none;font-family:inherit;font-size:11.5px;color:var(--ink-soft);
+    padding:8px 6px;cursor:pointer;text-decoration:underline dotted;
+  }
+
+  .sprout{
+    transform-box:fill-box;transform-origin:50% 100%;
+    animation:grow .85s cubic-bezier(.25,1.45,.45,1) both;
+  }
+  @keyframes grow{0%{transform:scale(0)}62%{transform:scale(1.07)}100%{transform:scale(1)}}
+  .sway{
+    transform-box:fill-box;transform-origin:50% 100%;
+    animation:sway 4s ease-in-out infinite;
+  }
+  @keyframes sway{0%,100%{transform:rotate(-1.4deg)}50%{transform:rotate(1.4deg)}}
+  .snip{
+    transform-box:fill-box;transform-origin:50% 100%;
+    animation:snipfall .62s ease-in both !important;
+  }
+  @keyframes snipfall{
+    0%{transform:rotate(0) translateY(0);opacity:1}
+    25%{transform:rotate(9deg) translateY(2px);opacity:1}
+    100%{transform:rotate(26deg) translateY(60px);opacity:0}
+  }
+  .vinegrow{transition:stroke-dashoffset 1s cubic-bezier(.4,0,.3,1)}
+  .fadein{animation:fadein .4s ease both}
+  @keyframes fadein{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
+
+  .wing{transform-box:fill-box}
+  .wl{transform-origin:right center;animation:flap .2s ease-in-out infinite alternate}
+  .wr{transform-origin:left center;animation:flap .2s ease-in-out infinite alternate}
+  @keyframes flap{from{transform:scaleX(1)}to{transform:scaleX(0.28)}}
+  .landed .wl,.landed .wr{animation-duration:.8s}
+
+  @media (prefers-reduced-motion:reduce){
+    .sway{animation:none}
+    .sprout{animation-duration:.01s}
+    .wl,.wr{animation-duration:.6s}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">maskingtape lab</div>
+  <h1>たねまき<span class="dot">・</span>テープ</h1>
+  <p class="hint" id="hint">テープをタップして、たねをまこう</p>
+</header>
+
+<main>
+  <div class="desk" id="desk">
+    <svg id="stage" viewBox="0 0 400 216" preserveAspectRatio="xMidYMid meet" aria-label="ボタニカル柄を育てるマスキングテープのキャンバス">
+      <defs id="defs">
+        <clipPath id="tapeclip"><rect x="0" y="34" width="400" height="150"/></clipPath>
+        <linearGradient id="tapegrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#FFFEF8"/>
+          <stop offset="1" stop-color="#F8F5E8"/>
+        </linearGradient>
+        <linearGradient id="stemgrad" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0" stop-color="#5F8250"/>
+          <stop offset="1" stop-color="#8DAA6E"/>
+        </linearGradient>
+      </defs>
+
+      <rect x="0" y="182" width="400" height="6" fill="rgba(76,74,63,.10)"/>
+
+      <g clip-path="url(#tapeclip)">
+        <rect x="0" y="34" width="400" height="150" fill="url(#tapegrad)" opacity="0.96"/>
+        <g opacity=".35" id="fibers"></g>
+        <g id="plants"></g>
+        <g id="fx"></g>
+      </g>
+
+      <line x1="0" y1="34.5" x2="400" y2="34.5" stroke="rgba(76,74,63,.15)" stroke-width="1"/>
+      <line x1="0" y1="183.5" x2="400" y2="183.5" stroke="rgba(76,74,63,.2)" stroke-width="1"/>
+
+      <g id="sky"></g>
+    </svg>
+
+    <div class="roller" id="roller">
+      <div class="stitches" id="stitches"></div>
+      <div class="label">← ころころ なでると 一周まわるよ →</div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="tools" id="tools">
+    <button class="packet active" data-tool="hana" aria-pressed="true">
+      <svg viewBox="0 0 26 26"><g transform="translate(13 13)">
+        <ellipse cx="0" cy="-5" rx="3.4" ry="5" fill="#E79AAC"/>
+        <ellipse cx="0" cy="-5" rx="3.4" ry="5" fill="#C9A8D8" transform="rotate(72)"/>
+        <ellipse cx="0" cy="-5" rx="3.4" ry="5" fill="#A8C3DD" transform="rotate(144)"/>
+        <ellipse cx="0" cy="-5" rx="3.4" ry="5" fill="#F2B58C" transform="rotate(216)"/>
+        <ellipse cx="0" cy="-5" rx="3.4" ry="5" fill="#F6F1E2" transform="rotate(288)"/>
+        <circle r="2.6" fill="#F2CE6B"/></g></svg>
+      おはな
+    </button>
+    <button class="packet" data-tool="mimosa" aria-pressed="false">
+      <svg viewBox="0 0 26 26">
+        <path d="M13 24 Q12 15 13 8" stroke="#6F8F58" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <circle cx="13" cy="7" r="3.4" fill="#EFC64B"/>
+        <circle cx="8.6" cy="10" r="2.8" fill="#F3D46A"/>
+        <circle cx="17.4" cy="10.4" r="2.8" fill="#EABB39"/>
+        <circle cx="10.6" cy="14" r="2.3" fill="#EFC64B"/>
+        <circle cx="16" cy="14.6" r="2.1" fill="#F3D46A"/>
+      </svg>
+      ミモザ
+    </button>
+    <button class="packet" data-tool="euca" aria-pressed="false">
+      <svg viewBox="0 0 26 26">
+        <path d="M13 24 Q13 14 13 4" stroke="#6C8C72" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <circle cx="8.6" cy="18" r="3.2" fill="#8FAE93"/><circle cx="17.4" cy="16" r="3.2" fill="#7EA184"/>
+        <circle cx="8.8" cy="11" r="3" fill="#7EA184"/><circle cx="17.2" cy="9.4" r="3" fill="#8FAE93"/>
+        <circle cx="13" cy="4.4" r="2.8" fill="#6C8C72"/>
+      </svg>
+      ユーカリ
+    </button>
+    <button class="packet" data-tool="omakase" aria-pressed="false">
+      <svg viewBox="0 0 26 26">
+        <circle cx="8" cy="9" r="3" fill="#E79AAC"/>
+        <circle cx="17.6" cy="7.6" r="2.6" fill="#EFC64B"/>
+        <circle cx="13" cy="16" r="3" fill="#8FAE93"/>
+        <text x="13" y="24" text-anchor="middle" font-size="7" fill="#8B8878">?</text>
+      </svg>
+      おまかせ
+    </button>
+    <button class="packet scissors" data-tool="cut" aria-pressed="false">
+      <svg viewBox="0 0 26 26">
+        <circle cx="7.5" cy="18.5" r="3" fill="none" stroke="#4C4A3F" stroke-width="2"/>
+        <circle cx="18.5" cy="18.5" r="3" fill="none" stroke="#4C4A3F" stroke-width="2"/>
+        <path d="M9.5 16 L19 4 M16.5 16 L7 4" stroke="#4C4A3F" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      はさみ
+    </button>
+  </div>
+  <div style="text-align:center"><button class="reset" id="reset">はたけを たがやしなおす</button></div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var svg = document.getElementById('stage');
+  var defs = document.getElementById('defs');
+  var plantsLayer = document.getElementById('plants');
+  var fxLayer = document.getElementById('fx');
+  var skyLayer = document.getElementById('sky');
+  var fibers = document.getElementById('fibers');
+  var roller = document.getElementById('roller');
+  var stitches = document.getElementById('stitches');
+  var hint = document.getElementById('hint');
+  var desk = document.getElementById('desk');
+
+  var NS = "http://www.w3.org/2000/svg";
+  var L = 1000;
+  var VIEW_W = 400;
+  var BASE_Y = 178;
+  var TAPE_TOP = 34, TAPE_BOT = 184;
+
+  var offset = 0;
+  var tool = 'hana';
+  var plants = [];
+  var uid = 0;
+  var planted = false;
+
+  function rand(a,b){ return a + Math.random()*(b-a); }
+  function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+  function mod(n,m){ return ((n % m) + m) % m; }
+  function el(name, attrs){
+    var e = document.createElementNS(NS, name);
+    for(var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+  function svgPoint(clientX, clientY){
+    var pt = svg.createSVGPoint();
+    pt.x = clientX; pt.y = clientY;
+    return pt.matrixTransform(svg.getScreenCTM().inverse());
+  }
+
+  (function(){
+    var s = '';
+    for(var i=0;i<26;i++){
+      var x = rand(0,400), y = rand(40,180), len = rand(4,12), a = rand(-20,20);
+      s += '<line x1="'+x+'" y1="'+y+'" x2="'+(x+len)+'" y2="'+(y+len*Math.tan(a*Math.PI/180)*0.2)+'" stroke="#D8D2BC" stroke-width="0.8"/>';
+    }
+    fibers.innerHTML = s;
+  })();
+
+  /* ---------- 水彩の絵の具 ---------- */
+  function hexRgb(h){ h=h.replace('#',''); return [parseInt(h.substr(0,2),16),parseInt(h.substr(2,2),16),parseInt(h.substr(4,2),16)]; }
+  function rgbHex(r,g,b){
+    function c(v){ v=Math.max(0,Math.min(255,Math.round(v))); var s=v.toString(16); return s.length<2?'0'+s:s; }
+    return '#'+c(r)+c(g)+c(b);
+  }
+  function mixHex(a,b,t){
+    var A=hexRgb(a), B=hexRgb(b);
+    return rgbHex(A[0]+(B[0]-A[0])*t, A[1]+(B[1]-A[1])*t, A[2]+(B[2]-A[2])*t);
+  }
+  function lighten(h,t){ return mixHex(h,'#FFFFFF',t); }
+  function darken(h,t){ return mixHex(h,'#41412F',t); }
+
+  var gid = 0;
+  // 水彩のたまり：中心はうすく、縁に絵の具がたまり、にじみ色が差す
+  function makeWatercolor(base, bleed, grads){
+    var id = 'wg' + (++gid);
+    var g = el('radialGradient', {id:id, cx:rand(0.36,0.5).toFixed(2), cy:rand(0.34,0.46).toFixed(2), r:'0.78'});
+    g.appendChild(el('stop', {offset:'0',    'stop-color':lighten(base,0.44), 'stop-opacity':'0.5'}));
+    g.appendChild(el('stop', {offset:'0.6',  'stop-color':base,               'stop-opacity':'0.8'}));
+    g.appendChild(el('stop', {offset:'0.88', 'stop-color':mixHex(base,bleed,0.5), 'stop-opacity':'0.9'}));
+    g.appendChild(el('stop', {offset:'1',    'stop-color':darken(mixHex(base,bleed,0.6),0.14), 'stop-opacity':'0.95'}));
+    defs.appendChild(g);
+    if(grads) grads.push(id);
+    return 'url(#'+id+')';
+  }
+  var MULT = ' style="mix-blend-mode:multiply"';
+
+  /* ---------- 色ファミリー（にじみ先の色つき） ---------- */
+  var FAMS = [
+    {cs:['#E79AAC','#E38FA0','#F0B3C1','#DB8296'], bleed:'#B77FC9'},  // ピンク→むらさきへにじむ
+    {cs:['#C9A8D8','#B79BD0','#DABEE6','#A98CC4'], bleed:'#7F94D0'},  // ラベンダー→あお
+    {cs:['#F1EAD6','#EDE5CC','#F5EFDD'],            bleed:'#ADB394'},  // しろ→みどりがかったグレー
+    {cs:['#A8C3DD','#93B4D4','#BCD2E6','#7FA5C9'], bleed:'#7A85C6'},  // そらいろ→ふかいあお
+    {cs:['#F2B58C','#EFA878','#F6C7A4','#E8975E'], bleed:'#DB8296'}   // あんず→ばら色
+  ];
+  var WHITE_FAMILY = 2;
+  var PETAL_FAMILIES = FAMS.map(function(f){ return f.cs; });
+  var YELLOWS = ['#EFC64B','#E9BA39','#F3D46A','#F0AE4E'];
+  var YELLOW_BLEED = '#D68F2E';
+  var EUCA = ['#8FAE93','#7EA184','#6C8C72','#9BB89B','#B4C4A6'];
+  var EUCA_BLEED = '#4E6E58';
+  var STEM = 'url(#stemgrad)';
+
+  function stemPath(h, lean){
+    var tipX = lean*1.5;
+    return { d:'M0 0 Q '+lean+' '+(-h*0.55)+' '+tipX+' '+(-h), tipX:tipX, tipY:-h };
+  }
+  // 花用：ゆるやかなS字の茎（3次ベジェ）。at(t)で茎の途中の座標がとれる
+  function curvyStem(h, lean){
+    var sway = Math.min(h*0.16, 13) * rand(0.55,1) * (Math.random()<0.5?-1:1);
+    var p1 = {x:sway,            y:-h*0.32};
+    var p2 = {x:lean - sway*0.7, y:-h*0.7};
+    var p3 = {x:lean*1.4,        y:-h};
+    function at(t){
+      var u = 1-t;
+      return {
+        x: 3*u*u*t*p1.x + 3*u*t*t*p2.x + t*t*t*p3.x,
+        y: 3*u*u*t*p1.y + 3*u*t*t*p2.y + t*t*t*p3.y
+      };
+    }
+    return {
+      d: 'M0 0 C '+p1.x.toFixed(1)+' '+p1.y.toFixed(1)+' '+p2.x.toFixed(1)+' '+p2.y.toFixed(1)+' '+p3.x.toFixed(1)+' '+p3.y.toFixed(1),
+      tipX: p3.x, tipY: p3.y, at: at
+    };
+  }
+  function stem(st, w){
+    return '<path d="'+st.d+'" stroke="'+STEM+'" stroke-width="'+(w||2.8)+'" fill="none" stroke-linecap="round" opacity="0.88"'+MULT+'/>';
+  }
+
+  /* ---------- おはな ---------- */
+  function genHana(h){
+    var grads = [];
+    var lean = rand(-8,8);
+    var st = curvyStem(h, lean);
+    var famIdx = Math.floor(Math.random()*FAMS.length);
+    var fam = FAMS[famIdx];
+    var base = pick(fam.cs);
+    var fill = makeWatercolor(base, fam.bleed, grads);
+    var isWhite = (famIdx === WHITE_FAMILY);
+    var blend = isWhite ? '' : MULT;
+    var stroke = isWhite ? ' stroke="#D5CBAE" stroke-width="0.7"' : '';
+    var style = pick(['maru','maru','togari','daisy']);
+    var r = rand(8,14);
+    var center = pick(['#F2CE6B','#E9BA39','#D9A93A','#E8975E','#C9788A']);
+    var centerFill = makeWatercolor(center, '#C07A2E', grads);
+
+    var s = stem(st);
+    var lp1 = st.at(0.45), lp2 = st.at(0.68);
+    s += leaf(lp1.x, lp1.y, rand(-50,-25), 1, null, grads);
+    if(h>60) s += leaf(lp2.x, lp2.y, rand(25,50), -1, null, grads);
+
+    s += '<g transform="translate('+st.tipX+' '+st.tipY+') rotate('+rand(-12,12)+')">';
+    if(style === 'maru'){
+      var n = pick([5,5,6]);
+      for(var i=0;i<n;i++){
+        s += '<ellipse cx="0" cy="'+(-r*0.75)+'" rx="'+(r*0.64)+'" ry="'+r+'" fill="'+fill+'"'+stroke+blend+' transform="rotate('+(i*360/n + rand(-4,4))+')"/>';
+      }
+      s += '<circle r="'+(r*0.4)+'" fill="'+centerFill+'"'+blend+'/>';
+    } else if(style === 'togari'){
+      var n2 = pick([5,6,7]);
+      for(var j=0;j<n2;j++){
+        s += '<path d="M0 1 C '+(r*0.52)+' '+(-r*0.35)+' '+(r*0.44)+' '+(-r*1.15)+' 0 '+(-r*1.55)+' C '+(-r*0.44)+' '+(-r*1.15)+' '+(-r*0.52)+' '+(-r*0.35)+' 0 1 Z" fill="'+fill+'"'+stroke+blend+' transform="rotate('+(j*360/n2 + rand(-3,3))+')"/>';
+      }
+      s += '<circle r="'+(r*0.32)+'" fill="'+centerFill+'"'+blend+'/>';
+    } else {
+      var n3 = Math.round(rand(10,13));
+      for(var k2=0;k2<n3;k2++){
+        s += '<ellipse cx="0" cy="'+(-r*0.7)+'" rx="'+(r*0.26)+'" ry="'+(r*0.95)+'" fill="'+fill+'"'+stroke+blend+' transform="rotate('+(k2*360/n3)+')"/>';
+      }
+      s += '<circle r="'+(r*0.48)+'" fill="'+centerFill+'"'+blend+'/>';
+      for(var m2=0;m2<4;m2++){ s += '<circle cx="'+rand(-r*0.22,r*0.22)+'" cy="'+rand(-r*0.22,r*0.22)+'" r="0.8" fill="rgba(76,74,63,.3)"/>'; }
+    }
+    if(Math.random() < 0.3){
+      var bs = r*0.42;
+      s += '<g transform="translate('+rand(8,13)+' '+rand(2,7)+')"><circle r="'+bs+'" fill="'+fill+'"'+stroke+blend+'/><path d="M0 '+bs+' Q 2 '+(bs+5)+' 1 '+(bs+9)+'" stroke="'+STEM+'" stroke-width="1.6" fill="none" opacity="0.85"/></g>';
+    }
+    s += '</g>';
+    return { svg:s, tip:st.tipY, grads:grads };
+  }
+
+  function genMimosa(h){
+    var grads = [];
+    var lean = rand(-10,10);
+    var st = curvyStem(h, lean);
+    var fill = makeWatercolor(pick(YELLOWS), YELLOW_BLEED, grads);
+    var s = stem(st, 2.6);
+    var lm = st.at(0.35);
+    s += leaf(lm.x, lm.y, rand(-55,-35), 1, '#87A26B', grads);
+    var count = Math.round(h/10);
+    for(var i=0;i<count;i++){
+      var t = 0.45 + 0.55*(i/count);
+      var a = st.at(t);
+      var bx = a.x + rand(-10,10);
+      var by = a.y + rand(-5,5);
+      s += '<line x1="'+a.x.toFixed(1)+'" y1="'+a.y.toFixed(1)+'" x2="'+bx+'" y2="'+by+'" stroke="'+STEM+'" stroke-width="1.2" opacity="0.8"/>';
+      s += '<circle cx="'+bx+'" cy="'+by+'" r="'+rand(3.4,6)+'" fill="'+fill+'"'+MULT+'/>';
+    }
+    s += '<circle cx="'+st.tipX+'" cy="'+st.tipY+'" r="'+rand(4.4,6)+'" fill="'+fill+'"'+MULT+'/>';
+    return { svg:s, tip:st.tipY, grads:grads };
+  }
+
+  function genEuca(h){
+    var grads = [];
+    var lean = rand(-9,9);
+    var st = stemPath(h, lean);
+    var fill = makeWatercolor(pick(EUCA), EUCA_BLEED, grads);
+    var round = Math.random() < 0.6;
+    var s = stem(st, 2.6);
+    var count = Math.max(3, Math.round(h/15));
+    for(var i=0;i<count;i++){
+      var t = 0.25 + 0.7*(i/count);
+      var cx = lean*1.4*t, cy = -h*t;
+      var r = rand(5,7.2)*(1 - t*0.25);
+      if(round){
+        s += '<circle cx="'+(cx-r-1.5)+'" cy="'+cy+'" r="'+r+'" fill="'+fill+'"'+MULT+'/>';
+        s += '<circle cx="'+(cx+r+1.5)+'" cy="'+(cy-3)+'" r="'+(r*0.92)+'" fill="'+fill+'"'+MULT+'/>';
+      } else {
+        s += '<ellipse cx="'+(cx-r-1)+'" cy="'+cy+'" rx="'+(r*1.15)+'" ry="'+(r*0.55)+'" fill="'+fill+'"'+MULT+' transform="rotate('+rand(-28,-14)+' '+(cx-r-1)+' '+cy+')"/>';
+        s += '<ellipse cx="'+(cx+r+1)+'" cy="'+(cy-3)+'" rx="'+(r*1.1)+'" ry="'+(r*0.52)+'" fill="'+fill+'"'+MULT+' transform="rotate('+rand(14,28)+' '+(cx+r+1)+' '+(cy-3)+')"/>';
+      }
+    }
+    s += '<circle cx="'+st.tipX+'" cy="'+st.tipY+'" r="4" fill="'+fill+'"'+MULT+'/>';
+    return { svg:s, tip:st.tipY, grads:grads };
+  }
+
+  function genIchigo(h){
+    var grads = [];
+    h = Math.min(h, 62);
+    var lean = rand(-6,6);
+    var st = curvyStem(h, lean);
+    var fill = makeWatercolor('#DF5A62', '#A83A55', grads);
+    var s = stem(st, 2.6);
+    var li = st.at(0.4);
+    s += leaf(li.x, li.y, rand(-55,-30), 1, null, grads);
+    var bx = st.tipX, by = st.tipY + 7;
+    s += '<g transform="translate('+bx+' '+by+')">';
+    s += '<path d="M0 -3.6 C 8.4 -3.6 8.4 4.8 0 10.8 C -8.4 4.8 -8.4 -3.6 0 -3.6 Z" fill="'+fill+'"'+MULT+'/>';
+    for(var i=0;i<7;i++){
+      s += '<circle cx="'+rand(-4,4)+'" cy="'+rand(-0.5,6.5)+'" r="0.75" fill="#F8E3B0"/>';
+    }
+    s += '<path d="M-4.8 -3 L0 -6.6 L4.8 -3 L0 -1.2 Z" fill="#5A7847" opacity="0.9"'+MULT+'/>';
+    s += '</g>';
+    s += '<g class="fadein"><text x="'+(bx+11)+'" y="'+(by-9)+'" font-size="9" fill="#DF5A62" font-family="inherit">!</text></g>';
+    return { svg:s, tip:st.tipY, grads:grads };
+  }
+
+  var leafGradCache = {};
+  function leaf(x, y, angle, side, color, grads){
+    color = color || '#87A26B';
+    var fill;
+    if(leafGradCache[color]){ fill = leafGradCache[color]; }
+    else { fill = makeWatercolor(color, EUCA_BLEED, null); leafGradCache[color] = fill; }
+    return '<g transform="translate('+x+' '+y+') rotate('+angle+')">' +
+      '<path d="M0 0 Q '+(7*side)+' -5 '+(13*side)+' 0 Q '+(7*side)+' 5 0 0 Z" fill="'+fill+'"'+MULT+'/></g>';
+  }
+
+  function genPlant(type, h){
+    if(type==='omakase'){
+      if(Math.random() < 0.1) return genIchigo(h);
+      type = pick(['hana','mimosa','euca']);
+    }
+    if(type==='hana') return genHana(h);
+    if(type==='mimosa') return genMimosa(h);
+    return genEuca(h);
+  }
+
+  /* ---------- つる ---------- */
+  function genVine(points){
+    var grads = [];
+    var ox = points[0].x, oy = points[0].y;
+    var rel = points.map(function(p){ return {x:p.x-ox, y:p.y-oy}; });
+    var d = 'M0 0';
+    for(var i=1;i<rel.length-1;i++){
+      var mx = (rel[i].x + rel[i+1].x)/2, my = (rel[i].y + rel[i+1].y)/2;
+      d += ' Q '+rel[i].x.toFixed(1)+' '+rel[i].y.toFixed(1)+' '+mx.toFixed(1)+' '+my.toFixed(1);
+    }
+    var last = rel[rel.length-1];
+    d += ' L '+last.x.toFixed(1)+' '+last.y.toFixed(1);
+
+    var famIdx = Math.floor(Math.random()*FAMS.length);
+    var fam = FAMS[famIdx];
+    var fill = makeWatercolor(pick(fam.cs), fam.bleed, grads);
+    var blend = (famIdx === WHITE_FAMILY) ? '' : MULT;
+    var s = '<path class="vinepath" d="'+d+'" stroke="'+STEM+'" stroke-width="2.6" fill="none" stroke-linecap="round" opacity="0.88"/>';
+    var len = 0, marks = [];
+    for(var i2=1;i2<rel.length;i2++){
+      var dx = rel[i2].x-rel[i2-1].x, dy = rel[i2].y-rel[i2-1].y;
+      var seg = Math.sqrt(dx*dx+dy*dy);
+      len += seg;
+      if(len > 26){
+        len = 0;
+        marks.push({x:rel[i2].x, y:rel[i2].y, ang:Math.atan2(dy,dx)*180/Math.PI});
+      }
+    }
+    var side = 1;
+    marks.forEach(function(m, idx){
+      if(idx % 3 === 2){
+        s += '<circle cx="'+m.x+'" cy="'+m.y+'" r="'+rand(2.8,4.2)+'" fill="'+fill+'"'+blend+' class="fadein" style="animation-delay:'+(0.5+idx*0.08)+'s"/>';
+      } else {
+        s += '<g class="fadein" style="animation-delay:'+(0.4+idx*0.08)+'s">'+leaf(m.x, m.y, m.ang + 60*side, side, null, grads)+'</g>';
+      }
+      side *= -1;
+    });
+    s += '<g class="fadein" style="animation-delay:1s"><circle cx="'+last.x+'" cy="'+last.y+'" r="4.2" fill="'+fill+'"'+blend+'/><circle cx="'+last.x+'" cy="'+last.y+'" r="1.5" fill="#F2CE6B"/></g>';
+
+    return { svg:s, oy:oy, tip:last.y, grads:grads };
+  }
+
+  /* ---------- 植える ---------- */
+  function addPlant(worldX, baseY, gen, isVine){
+    planted = true;
+    hint.classList.add('hide');
+    var id = ++uid;
+    var copies = [];
+    for(var k=0;k<2;k++){
+      var g = el('g', {'data-id':id});
+      var inner = document.createElementNS(NS,'g');
+      inner.setAttribute('class','sprout');
+      inner.innerHTML = gen.svg;
+      g.appendChild(inner);
+      plantsLayer.appendChild(g);
+      copies.push(g);
+      if(isVine){
+        inner.removeAttribute('class');
+        var path = inner.querySelector('.vinepath');
+        if(path){
+          var plen = path.getTotalLength();
+          path.style.strokeDasharray = plen;
+          path.style.strokeDashoffset = plen;
+          path.classList.add('vinegrow');
+          requestAnimationFrame(function(){ requestAnimationFrame(function(){ path.style.strokeDashoffset = 0; }); });
+        }
+      } else {
+        (function(inner){
+          inner.addEventListener('animationend', function h(){
+            inner.removeEventListener('animationend', h);
+            inner.setAttribute('class','sway');
+            inner.style.animationDuration = rand(3.2,5.2).toFixed(2)+'s';
+            inner.style.animationDelay = (-rand(0,3)).toFixed(2)+'s';
+          });
+        })(inner);
+      }
+    }
+    var p = {id:id, x:worldX, baseY:baseY, copies:copies, isVine:isVine, tip:(gen.tip||-30), grads:(gen.grads||[])};
+    plants.push(p);
+    placePlant(p);
+    return p;
+  }
+
+  function placePlant(p){
+    var sx = mod(p.x - offset, L);
+    p.copies[0].setAttribute('transform','translate('+sx+' '+p.baseY+')');
+    p.copies[1].setAttribute('transform','translate('+(sx - L)+' '+p.baseY+')');
+  }
+  function placeAll(){
+    for(var i=0;i<plants.length;i++) placePlant(plants[i]);
+    stitches.style.backgroundPosition = (-offset * (svg.clientWidth/VIEW_W)) + 'px 50%';
+  }
+  function screenXOf(p){
+    var sx = mod(p.x - offset, L);
+    if(sx > VIEW_W + 60) sx -= L;
+    return sx;
+  }
+
+  /* ---------- ハサミ ---------- */
+  function snip(id, atX, atY){
+    var p = null;
+    for(var i=0;i<plants.length;i++) if(plants[i].id === id){ p = plants[i]; break; }
+    if(!p) return;
+    plants = plants.filter(function(q){ return q.id !== id; });
+    p.copies.forEach(function(g){
+      var inner = g.firstChild;
+      inner.style.animation = '';
+      inner.setAttribute('class','snip');
+    });
+    var fx = el('g',{transform:'translate('+atX+' '+atY+')'});
+    fx.innerHTML = '<g class="fadein"><path d="M-7 0 L7 0" stroke="#4C4A3F" stroke-width="1.4" stroke-dasharray="3 2.4"/><text x="9" y="3" font-size="9" fill="#4C4A3F">✂</text></g>';
+    fxLayer.appendChild(fx);
+    setTimeout(function(){ fx.remove(); }, 500);
+    setTimeout(function(){
+      p.copies.forEach(function(g){ g.remove(); });
+      p.grads.forEach(function(gidStr){
+        var n = document.getElementById(gidStr);
+        if(n) n.remove();
+      });
+    }, 680);
+  }
+
+  /* ---------- ステージ操作 ---------- */
+  var drag = null;
+  svg.addEventListener('pointerdown', function(e){
+    e.preventDefault();
+    var pt = svgPoint(e.clientX, e.clientY);
+    if(pt.y < TAPE_TOP || pt.y > TAPE_BOT + 8) return;
+
+    if(tool === 'cut'){
+      var t = e.target;
+      while(t && t !== svg && !(t.getAttribute && t.getAttribute('data-id'))) t = t.parentNode;
+      if(t && t !== svg){
+        snip(parseInt(t.getAttribute('data-id'),10), pt.x, pt.y);
+      }
+      return;
+    }
+
+    svg.setPointerCapture(e.pointerId);
+    drag = { startX:pt.x, startY:pt.y, points:[{x:pt.x, y:pt.y}], isVine:false };
+  });
+
+  svg.addEventListener('pointermove', function(e){
+    if(!drag) return;
+    var pt = svgPoint(e.clientX, e.clientY);
+    pt.y = Math.min(Math.max(pt.y, TAPE_TOP + 8), TAPE_BOT - 6);
+    var last = drag.points[drag.points.length-1];
+    var dx = pt.x - last.x, dy = pt.y - last.y;
+    if(Math.sqrt(dx*dx + dy*dy) > 7){
+      drag.points.push({x:pt.x, y:pt.y});
+      var tx = pt.x - drag.startX, ty = pt.y - drag.startY;
+      if(Math.sqrt(tx*tx + ty*ty) > 16) drag.isVine = true;
+    }
+  });
+
+  svg.addEventListener('pointerup', function(e){
+    if(!drag) return;
+    var d = drag; drag = null;
+    var pt = svgPoint(e.clientX, e.clientY);
+
+    if(d.isVine && d.points.length > 3){
+      var gen = genVine(d.points);
+      var p = addPlant(mod(d.points[0].x + offset, L), gen.oy, gen, true);
+      maybeButterfly(p);
+    } else {
+      var y = Math.min(Math.max(pt.y, TAPE_TOP + 10), BASE_Y);
+      var h = Math.min(Math.max(BASE_Y - y, 26), 122);
+      dropSeed(pt.x, y, function(){
+        var gen = genPlant(tool, h * rand(0.92, 1.08));
+        var p = addPlant(mod(pt.x + offset, L), BASE_Y, gen, false);
+        maybeButterfly(p);
+      });
+    }
+  });
+  svg.addEventListener('pointercancel', function(){ drag = null; });
+
+  function dropSeed(x, y, done){
+    var seed = el('circle', {cx:x, cy:y, r:2.6, fill:'#8A6B4A'});
+    fxLayer.appendChild(seed);
+    var start = null, fromY = y, toY = BASE_Y - 2;
+    function step(ts){
+      if(!start) start = ts;
+      var t = Math.min((ts - start)/300, 1);
+      seed.setAttribute('cy', fromY + (toY - fromY)*t*t);
+      if(t < 1){ requestAnimationFrame(step); }
+      else { seed.remove(); done(); }
+    }
+    requestAnimationFrame(step);
+  }
+
+  /* ---------- ちょうちょ ---------- */
+  var butterfly = null;
+  var BFLY_COLORS = [
+    {w:'#F5E06B', spot:'#E3B93C'},
+    {w:'#FAF4E0', spot:'#8B8878'},
+    {w:'#BFD8F0', spot:'#7FA5C9'},
+    {w:'#F0B7C6', spot:'#DB8296'}
+  ];
+
+  function spawnButterfly(){
+    if(butterfly) return;
+    var targets = plants.filter(function(p){
+      return !p.isVine && p.copies[0].getAttribute('data-id');
+    });
+    if(!targets.length) return;
+    var target = pick(targets);
+    var c = pick(BFLY_COLORS);
+    var bgrads = [];
+    var wfill = makeWatercolor(c.w, c.spot, bgrads);
+
+    var g = el('g',{});
+    g.innerHTML =
+      '<g class="bwrap">' +
+        '<g class="wing wl"><path d="M0 0 C -9 -9 -13 -3 -10.5 1 C -13 3.5 -8.5 9 0 2 Z" fill="'+wfill+'" opacity=".95" stroke="rgba(76,74,63,.18)" stroke-width="0.6"/>' +
+          '<circle cx="-7.5" cy="-2.5" r="1.4" fill="'+c.spot+'" opacity=".8"/></g>' +
+        '<g class="wing wr"><path d="M0 0 C 9 -9 13 -3 10.5 1 C 13 3.5 8.5 9 0 2 Z" fill="'+wfill+'" opacity=".95" stroke="rgba(76,74,63,.18)" stroke-width="0.6"/>' +
+          '<circle cx="7.5" cy="-2.5" r="1.4" fill="'+c.spot+'" opacity=".8"/></g>' +
+        '<ellipse rx="1.2" ry="3.6" cy="1" fill="#5B5648"/>' +
+        '<path d="M-0.8 -2.4 Q -3 -6 -4.2 -6.6 M0.8 -2.4 Q 3 -6 4.2 -6.6" stroke="#5B5648" stroke-width="0.7" fill="none"/>' +
+      '</g>';
+    skyLayer.appendChild(g);
+
+    var fromLeft = Math.random() < 0.5;
+    butterfly = {
+      g:g, target:target, grads:bgrads,
+      state:'in', t:0,
+      x: fromLeft ? -30 : VIEW_W + 30,
+      y: rand(30, 70),
+      startX: fromLeft ? -30 : VIEW_W + 30,
+      startY: rand(30, 70),
+      landUntil:0, exitTo:{x:0,y:0}, exitFrom:{x:0,y:0},
+      last: performance.now()
+    };
+    requestAnimationFrame(bflyStep);
+  }
+
+  function removeButterfly(){
+    if(!butterfly) return;
+    butterfly.g.remove();
+    butterfly.grads.forEach(function(gidStr){
+      var n = document.getElementById(gidStr);
+      if(n) n.remove();
+    });
+    butterfly = null;
+  }
+
+  function flowerHead(p){
+    return { x: screenXOf(p), y: p.baseY + p.tip - 3 };
+  }
+  function smooth(t){ return t*t*(3-2*t); }
+
+  function bflyStep(now){
+    var b = butterfly;
+    if(!b) return;
+    var dt = Math.min((now - b.last)/1000, 0.05);
+    b.last = now;
+
+    var alive = plants.indexOf(b.target) !== -1;
+    if(!alive && b.state !== 'out') startExit(b);
+
+    if(b.state === 'in'){
+      b.t += dt / 2.4;
+      var e = smooth(Math.min(b.t,1));
+      var fp = flowerHead(b.target);
+      b.x = b.startX + (fp.x - b.startX)*e;
+      b.y = b.startY + (fp.y - 8 - b.startY)*e + Math.sin(now/140)*4*(1-e);
+      if(b.t >= 1){
+        b.state = 'land';
+        b.landUntil = now + rand(1400, 2400);
+        b.g.classList.add('landed');
+      }
+    } else if(b.state === 'land'){
+      var fp2 = flowerHead(b.target);
+      b.x = fp2.x; b.y = fp2.y - 7 + Math.sin(now/500)*0.8;
+      if(now > b.landUntil) startExit(b);
+    } else {
+      b.t += dt / 2.2;
+      var e2 = smooth(Math.min(b.t,1));
+      b.x = b.exitFrom.x + (b.exitTo.x - b.exitFrom.x)*e2;
+      b.y = b.exitFrom.y + (b.exitTo.y - b.exitFrom.y)*e2 + Math.sin(now/130)*4*e2;
+      if(b.t >= 1){ removeButterfly(); return; }
+    }
+
+    var dir = (b.prevX !== undefined && b.x < b.prevX - 0.1) ? -1 : 1;
+    if(b.prevX !== undefined && Math.abs(b.x - b.prevX) < 0.1) dir = b.prevDir || 1;
+    b.prevX = b.x; b.prevDir = dir;
+    b.g.setAttribute('transform','translate('+b.x+' '+b.y+') scale('+dir+' 1) rotate('+Math.sin(now/300)*4+')');
+    requestAnimationFrame(bflyStep);
+  }
+
+  function startExit(b){
+    b.state = 'out';
+    b.t = 0;
+    b.g.classList.remove('landed');
+    b.exitFrom = {x:b.x, y:b.y};
+    b.exitTo = {x: (Math.random()<0.5 ? -40 : VIEW_W+40), y: rand(10, 45)};
+  }
+
+  function maybeButterfly(p){
+    if(!p.isVine && Math.random() < 0.18){
+      setTimeout(spawnButterfly, rand(500, 1500));
+    }
+  }
+  setInterval(function(){
+    if(!butterfly && plants.length > 2 && Math.random() < 0.4) spawnButterfly();
+  }, 14000);
+
+  /* ---------- ローラー ---------- */
+  var roll = null, vel = 0, lastT = 0, spinning = false;
+  roller.addEventListener('pointerdown', function(e){
+    e.preventDefault();
+    roller.setPointerCapture(e.pointerId);
+    roller.classList.add('used');
+    roll = { lastX:e.clientX };
+    vel = 0; lastT = performance.now();
+  });
+  roller.addEventListener('pointermove', function(e){
+    if(!roll) return;
+    var dxPx = e.clientX - roll.lastX;
+    roll.lastX = e.clientX;
+    var dxWorld = dxPx * (VIEW_W / svg.clientWidth);
+    offset = mod(offset - dxWorld, L);
+    var now = performance.now();
+    var dt = Math.max(now - lastT, 1);
+    vel = -dxWorld / dt * 16;
+    lastT = now;
+    placeAll();
+  });
+  function endRoll(){
+    if(!roll) return;
+    roll = null;
+    if(Math.abs(vel) > 0.4 && !spinning){ spinning = true; requestAnimationFrame(inertia); }
+  }
+  roller.addEventListener('pointerup', endRoll);
+  roller.addEventListener('pointercancel', endRoll);
+  function inertia(){
+    vel *= 0.94;
+    if(Math.abs(vel) < 0.15 || roll){ spinning = false; return; }
+    offset = mod(offset + vel, L);
+    placeAll();
+    requestAnimationFrame(inertia);
+  }
+
+  /* ---------- スタート旗 ---------- */
+  (function(){
+    var gen = { svg:
+      '<line x1="0" y1="0" x2="0" y2="-20" stroke="#B8B29A" stroke-width="1.6"/>' +
+      '<path d="M0 -20 L14 -16.5 L0 -13 Z" fill="#DF5A62"/>' +
+      '<text x="2.4" y="-15" font-size="4.2" fill="#fff" font-family="inherit">スタート</text>'
+    };
+    var p = addPlant(0, 62, gen, true);
+    planted = false; hint.classList.remove('hide');
+    p.copies.forEach(function(g){ g.removeAttribute('data-id'); });
+  })();
+
+  /* ---------- 道具 ---------- */
+  var toolsBox = document.getElementById('tools');
+  toolsBox.addEventListener('click', function(e){
+    var b = e.target.closest('.packet');
+    if(!b) return;
+    tool = b.getAttribute('data-tool');
+    toolsBox.querySelectorAll('.packet').forEach(function(x){
+      var on = (x === b);
+      x.classList.toggle('active', on);
+      x.setAttribute('aria-pressed', on);
+    });
+    desk.classList.toggle('cutmode', tool === 'cut');
+    hint.textContent = (tool === 'cut') ? 'きにいらない子は、チョキンと選別' :
+                        planted ? 'ドラッグすると、つるが伸びるよ' : 'テープをタップして、たねをまこう';
+    hint.classList.remove('hide');
+    if(planted) setTimeout(function(){ hint.classList.add('hide'); }, 2600);
+  });
+
+  document.getElementById('reset').addEventListener('click', function(){
+    var ids = plants.filter(function(p){ return p.copies[0].getAttribute('data-id'); })
+                    .map(function(p){ return p.id; });
+    ids.forEach(function(id, i){
+      setTimeout(function(){
+        var p = null;
+        for(var j=0;j<plants.length;j++) if(plants[j].id===id){ p=plants[j]; break; }
+        if(p) snip(id, screenXOf(p), p.baseY - 30);
+      }, i * 60);
+    });
+  });
+
+  window.addEventListener('resize', placeAll);
+  placeAll();
+})();
+</script>
+</body>
+</html>
