@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Cat's Meadow — maskingtape lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F5F2EA;
+    --desk:#EAE6D9;
+    --ink:#4C4A3F;
+    --ink-soft:#8B8878;
+    --tape:#FCFBF6;
+    --line:#3F5D45;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    background:var(--paper);color:var(--ink);
+    font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;
+    display:flex;flex-direction:column;min-height:100dvh;overflow:hidden;
+    user-select:none;-webkit-user-select:none;
+  }
+  header{padding:18px 20px 10px;text-align:center;position:relative}
+  .brand{font-size:11px;letter-spacing:.22em;color:var(--ink-soft)}
+  h1{font-size:23px;font-weight:900;letter-spacing:.06em;margin-top:2px}
+  h1 .dot{color:var(--line)}
+  .hint{margin-top:6px;font-size:13px;color:var(--ink-soft);transition:opacity .8s;min-height:1.2em}
+  .hint.hide{opacity:0}
+
+  .lang{
+    position:absolute;top:14px;right:16px;
+    display:flex;gap:1px;background:rgba(76,74,63,.09);
+    border-radius:999px;padding:2px;
+  }
+  .lang button{
+    background:none;border:none;font-family:inherit;font-size:10.5px;font-weight:700;
+    letter-spacing:.06em;color:var(--ink-soft);padding:4px 9px;border-radius:999px;cursor:pointer;
+    transition:background .18s, color .18s;
+  }
+  .lang button.on{background:var(--tape);color:var(--line);box-shadow:0 1px 2px rgba(76,74,63,.12)}
+
+  main{flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 0 4px;min-height:0}
+  .desk{
+    position:relative;margin:0 12px;background:var(--desk);
+    background-image:radial-gradient(rgba(76,74,63,.05) 1px, transparent 1.2px);
+    background-size:14px 14px;border-radius:20px;padding:22px 0 20px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.6), 0 1px 3px rgba(76,74,63,.08);
+  }
+  svg#stage{display:block;width:100%;height:auto;touch-action:none;cursor:crosshair}
+
+  footer{padding:14px 14px calc(14px + env(safe-area-inset-bottom))}
+  .tools{display:flex;gap:8px;justify-content:center;align-items:flex-end}
+  .packet{
+    flex:0 1 78px;background:var(--tape);border:none;border-radius:10px 10px 8px 8px;
+    padding:8px 3px 6px;font-family:inherit;font-size:11.5px;font-weight:700;color:var(--ink);
+    box-shadow:0 1.5px 0 rgba(76,74,63,.18);
+    display:flex;flex-direction:column;align-items:center;gap:3px;position:relative;
+    transition:transform .18s cubic-bezier(.2,1.6,.4,1), box-shadow .18s;cursor:pointer;
+  }
+  .packet::before{
+    content:"";position:absolute;top:-4px;left:7px;right:7px;height:5px;
+    background:linear-gradient(-45deg, transparent 33%, var(--tape) 33%),
+               linear-gradient(45deg, transparent 33%, var(--tape) 33%);
+    background-size:8px 5px;background-repeat:repeat-x;
+  }
+  .packet svg{width:25px;height:25px}
+  .packet.active{transform:translateY(-7px) rotate(-2deg);box-shadow:0 5px 10px rgba(76,74,63,.22)}
+  .reset{
+    background:none;border:none;font-family:inherit;font-size:11.5px;color:var(--ink-soft);
+    padding:10px 6px 0;cursor:pointer;text-decoration:underline dotted;
+  }
+
+  .sprout{transform-box:fill-box;transform-origin:50% 100%;
+    animation:grow .8s cubic-bezier(.25,1.4,.45,1) both}
+  @keyframes grow{0%{transform:scale(.02)}60%{transform:scale(1.06)}100%{transform:scale(1)}}
+  .snip{transform-box:fill-box;transform-origin:50% 100%;
+    animation:snipfall .6s ease-in both !important}
+  @keyframes snipfall{
+    0%{transform:rotate(0) translateY(0);opacity:1}
+    22%{transform:rotate(8deg) translateY(2px);opacity:1}
+    100%{transform:rotate(26deg) translateY(64px);opacity:0}
+  }
+  .fadein{animation:fadein .35s ease both}
+  @keyframes fadein{from{opacity:0}to{opacity:1}}
+  @media (prefers-reduced-motion:reduce){ .sprout{animation-duration:.01s} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="lang" id="lang">
+    <button data-lang="en" class="on">EN</button>
+    <button data-lang="ja">日本語</button>
+  </div>
+  <div class="brand">maskingtape lab</div>
+  <h1 id="title">Cat's <span class="dot">·</span> Meadow</h1>
+  <p class="hint" id="hint">Tap around the cat to sow a seed</p>
+</header>
+
+<main>
+  <div class="desk" id="desk">
+    <svg id="stage" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid meet" aria-label="A masking tape canvas where plants grow around a cat">
+      <defs>
+        <clipPath id="tapeclip"><rect x="0" y="14" width="400" height="172"/></clipPath>
+      </defs>
+
+      <rect x="0" y="184" width="400" height="6" fill="rgba(76,74,63,.10)"/>
+
+      <g clip-path="url(#tapeclip)">
+        <rect x="0" y="14" width="400" height="172" fill="#FCFBF6"/>
+        <g opacity=".3" id="fibers"></g>
+        <g id="plants"></g>
+        <g id="cat"></g>
+        <g id="fx"></g>
+        <path d="M0 170.5 L400 170.5" stroke="#3F5D45" stroke-width="1.3" stroke-linecap="round" opacity=".85"/>
+      </g>
+
+      <line x1="0" y1="14.5" x2="400" y2="14.5" stroke="rgba(76,74,63,.14)" stroke-width="1"/>
+      <line x1="0" y1="185.5" x2="400" y2="185.5" stroke="rgba(76,74,63,.18)" stroke-width="1"/>
+    </svg>
+  </div>
+</main>
+
+<footer>
+  <div class="tools" id="tools">
+    <button class="packet active" data-tool="ha" aria-pressed="true">
+      <svg viewBox="0 0 26 26" fill="none" stroke="#3F5D45" stroke-width="1.4" stroke-linecap="round">
+        <path d="M13 25 C13 16 13 8 13 3"/>
+        <path d="M13 18 C8 18 5 15 4 11 C9 10 12 13 13 18Z"/>
+        <path d="M13 11 C18 11 21 8 22 5 C17 4 14 6 13 11Z"/>
+      </svg>
+      <span class="lbl">Leaves</span>
+    </button>
+    <button class="packet" data-tool="tsuta" aria-pressed="false">
+      <svg viewBox="0 0 26 26" fill="none" stroke="#3F5D45" stroke-width="1.4" stroke-linecap="round">
+        <path d="M13 25 C9 19 17 14 13 8 C11 5 13 3 15 2.5"/>
+        <ellipse cx="8.6" cy="19.5" rx="3.2" ry="2" transform="rotate(-25 8.6 19.5)"/>
+        <ellipse cx="17.6" cy="15.5" rx="3.2" ry="2" transform="rotate(25 17.6 15.5)"/>
+        <ellipse cx="9" cy="10.5" rx="3.2" ry="2" transform="rotate(-25 9 10.5)"/>
+      </svg>
+      <span class="lbl">Vine</span>
+    </button>
+    <button class="packet" data-tool="tsubomi" aria-pressed="false">
+      <svg viewBox="0 0 26 26" fill="none" stroke="#3F5D45" stroke-width="1.4" stroke-linecap="round">
+        <path d="M13 25 C13 17 12 10 13 5"/>
+        <path d="M13 17 L7 13"/><path d="M13 11 L19 8"/>
+        <circle cx="6" cy="12" r="3" fill="#3F5D45"/>
+        <circle cx="20" cy="7" r="3" fill="#3F5D45"/>
+        <circle cx="13" cy="4" r="2.6" fill="#3F5D45"/>
+      </svg>
+      <span class="lbl">Buds</span>
+    </button>
+    <button class="packet" data-tool="hana" aria-pressed="false">
+      <svg viewBox="0 0 26 26" fill="none" stroke="#3F5D45" stroke-width="1.4" stroke-linecap="round">
+        <path d="M13 25 C13 18 13 13 13 10"/>
+        <ellipse cx="13" cy="4.6" rx="1.9" ry="3.4"/>
+        <ellipse cx="13" cy="4.6" rx="1.9" ry="3.4" transform="rotate(60 13 8)"/>
+        <ellipse cx="13" cy="4.6" rx="1.9" ry="3.4" transform="rotate(120 13 8)"/>
+        <ellipse cx="13" cy="4.6" rx="1.9" ry="3.4" transform="rotate(180 13 8)"/>
+        <ellipse cx="13" cy="4.6" rx="1.9" ry="3.4" transform="rotate(240 13 8)"/>
+        <ellipse cx="13" cy="4.6" rx="1.9" ry="3.4" transform="rotate(300 13 8)"/>
+        <circle cx="13" cy="8" r="1.6"/>
+      </svg>
+      <span class="lbl">Flower</span>
+    </button>
+  </div>
+  <div style="text-align:center"><button class="reset" id="reset">Mow the meadow</button></div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var NS = "http://www.w3.org/2000/svg";
+  var svg = document.getElementById('stage');
+  var plantsLayer = document.getElementById('plants');
+  var catLayer = document.getElementById('cat');
+  var fxLayer = document.getElementById('fx');
+  var fibers = document.getElementById('fibers');
+  var hint = document.getElementById('hint');
+  var titleEl = document.getElementById('title');
+  var resetBtn = document.getElementById('reset');
+
+  var GROUND = 170;
+  var TOP = 14, BOT = 186;
+  var CAT_X = 200;
+  var LINE = '#3F5D45';
+
+  var tool = 'ha';
+  var plants = [];
+  var uid = 0;
+  var planted = false;
+
+  /* ========== ことば ========== */
+  var I18N = {
+    en: {
+      docTitle: "Cat's Meadow — maskingtape lab",
+      title: "Cat's <span class=\"dot\">·</span> Meadow",
+      start: "Tap around the cat to sow a seed",
+      reset: "Mow the meadow",
+      tools: { ha:"Leaves", tsuta:"Vine", tsubomi:"Buds", hana:"Flower" },
+      grew:  { ha:"Leaves unfurl", tsuta:"A vine climbs up", tsubomi:"Buds appear", hana:"A flower opens" },
+      moods: ["Sulking","Unimpressed","Looking away","Pleased"],
+      moodLine: function(m){ return "The cat is " + m.toLowerCase() + "."; }
+    },
+    ja: {
+      docTitle: "ねこの草むら — maskingtape lab",
+      title: "ねこの<span class=\"dot\">・</span>草むら",
+      start: "ねこのまわりをタップして、たねをまこう",
+      reset: "くさむらを かりこむ",
+      tools: { ha:"はっぱ", tsuta:"つた", tsubomi:"つぼみ", hana:"おはな" },
+      grew:  { ha:"はっぱが しげるよ", tsuta:"つたが のびるよ", tsubomi:"つぼみが つくよ", hana:"おはなが さくよ" },
+      moods: ["ふてくされ","じとー","ぷいっ","ごきげん"],
+      moodLine: function(m){ return "ねこは いま「"+m+"」"; }
+    }
+  };
+
+  function readLang(){
+    var v = '';
+    try {
+      v = (new URLSearchParams(window.location.search).get('lang') || '').toLowerCase();
+    } catch(e){
+      var m = /[?&]lang=([^&]+)/i.exec(window.location.search || '');
+      if(m) v = decodeURIComponent(m[1]).toLowerCase();
+    }
+    if(v === 'ja' || v === 'jp' || v === 'ja-jp' || v === 'japanese') return 'ja';
+    return 'en';
+  }
+  var lang = readLang();
+  var T = I18N[lang];
+
+  function applyLang(next, pushUrl){
+    lang = next; T = I18N[lang];
+    document.documentElement.setAttribute('lang', lang);
+    document.title = T.docTitle;
+    titleEl.innerHTML = T.title;
+    resetBtn.textContent = T.reset;
+    document.querySelectorAll('.packet').forEach(function(b){
+      var k = b.getAttribute('data-tool');
+      b.querySelector('.lbl').textContent = T.tools[k];
+    });
+    document.querySelectorAll('#lang button').forEach(function(b){
+      b.classList.toggle('on', b.getAttribute('data-lang') === lang);
+    });
+    hint.textContent = planted ? T.grew[tool] : T.start;
+    hint.classList.remove('hide');
+    if(planted) setTimeout(function(){ hint.classList.add('hide'); }, 2000);
+    if(pushUrl){
+      try {
+        var u = new URL(window.location.href);
+        u.searchParams.set('lang', lang);
+        window.history.replaceState({}, '', u);
+      } catch(e){ /* サンドボックス等ではURL書き換え不可 */ }
+    }
+  }
+
+  document.getElementById('lang').addEventListener('click', function(e){
+    var b = e.target.closest('button');
+    if(!b) return;
+    applyLang(b.getAttribute('data-lang'), true);
+  });
+
+  /* ========== ゆかい ========== */
+  function rand(a,b){ return a + Math.random()*(b-a); }
+  function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+  function el(n,a){ var e=document.createElementNS(NS,n); for(var k in a) e.setAttribute(k,a[k]); return e; }
+  function svgPoint(x,y){ var p=svg.createSVGPoint(); p.x=x; p.y=y; return p.matrixTransform(svg.getScreenCTM().inverse()); }
+  function f(n){ return (+n).toFixed(1); }
+
+  (function(){
+    var s='';
+    for(var i=0;i<22;i++){
+      var x=rand(0,400), y=rand(20,168), len=rand(4,11);
+      s += '<line x1="'+x+'" y1="'+y+'" x2="'+(x+len)+'" y2="'+(y+rand(-1,1))+'" stroke="#D9D3BE" stroke-width="0.8"/>';
+    }
+    fibers.innerHTML = s;
+  })();
+
+  /* ========== ペン画のきほん ========== */
+  function pen(w){ return 'fill="none" stroke="'+LINE+'" stroke-width="'+f(w||1.5)+'" stroke-linecap="round" stroke-linejoin="round"'; }
+  function solid(){ return 'fill="'+LINE+'" stroke="none"'; }
+
+  function curvyStem(h, lean, sway){
+    var s = (sway!==undefined ? sway : Math.min(h*0.17,15)*rand(0.5,1)*(Math.random()<0.5?-1:1));
+    var p1={x:s, y:-h*0.32}, p2={x:lean-s*0.7, y:-h*0.7}, p3={x:lean*1.3, y:-h};
+    function at(t){ var u=1-t; return {
+      x: 3*u*u*t*p1.x + 3*u*t*t*p2.x + t*t*t*p3.x,
+      y: 3*u*u*t*p1.y + 3*u*t*t*p2.y + t*t*t*p3.y }; }
+    function ang(t){ var d=0.02, a=at(Math.max(0,t-d)), b=at(Math.min(1,t+d));
+      return Math.atan2(b.y-a.y, b.x-a.x)*180/Math.PI; }
+    return { d:'M0 0 C '+f(p1.x)+' '+f(p1.y)+' '+f(p2.x)+' '+f(p2.y)+' '+f(p3.x)+' '+f(p3.y),
+             tipX:p3.x, tipY:p3.y, at:at, ang:ang };
+  }
+
+  function leafOutline(size, side, fill){
+    var w = size, hh = size*0.42;
+    var d = 'M0 0 C '+f(w*0.24)+' '+f(-hh)+' '+f(w*0.72)+' '+f(-hh*1.1)+' '+f(w)+' 0 '+
+            'C '+f(w*0.72)+' '+f(hh*1.1)+' '+f(w*0.24)+' '+f(hh)+' 0 0 Z';
+    var s = '<path d="'+d+'" '+(fill?solid():pen(1.45))+' transform="scale('+side+' 1)"/>';
+    if(!fill) s += '<path d="M'+f(w*0.12*side)+' 0 L '+f(w*0.86*side)+' 0" '+pen(1.05)+' opacity=".75"/>';
+    return s;
+  }
+  function leafAt(x, y, angle, size, side, fill){
+    return '<g transform="translate('+f(x)+' '+f(y)+') rotate('+f(angle)+')">'+leafOutline(size, side, fill)+'</g>';
+  }
+  function roundLeaf(x,y,angle,r,fill){
+    return '<g transform="translate('+f(x)+' '+f(y)+') rotate('+f(angle)+')">' +
+      '<ellipse cx="'+f(r*0.95)+'" cy="0" rx="'+f(r)+'" ry="'+f(r*0.66)+'" '+(fill?solid():pen(1.35))+'/></g>';
+  }
+
+  function ladybug(x,y,a){
+    return '<g transform="translate('+f(x)+' '+f(y)+') rotate('+f(a)+')">' +
+      '<ellipse rx="3.4" ry="2.6" '+pen(1.2)+'/>' +
+      '<path d="M0 -2.6 L0 2.6" '+pen(1.1)+'/>' +
+      '<path d="M-3.4 0 C -4.6 0 -5 -1 -4.6 -1.6" '+pen(1)+'/>' +
+      '<circle cx="-1.5" cy="-1.1" r="0.7" '+solid()+'/><circle cx="1.5" cy="1.1" r="0.7" '+solid()+'/>' +
+      '<circle cx="1.6" cy="-1.2" r="0.6" '+solid()+'/></g>';
+  }
+  function snail(x,y){
+    return '<g transform="translate('+f(x)+' '+f(y)+')">' +
+      '<path d="M-5 1.6 C -6.5 1.6 -6.5 -0.4 -4.6 -0.4" '+pen(1.2)+'/>' +
+      '<path d="M-5.2 -0.6 L-6.4 -3 M-3.8 -1 L-4.4 -3.4" '+pen(1)+'/>' +
+      '<path d="M1 -1 m -3.4 0 a 3.4 3.4 0 1 0 6.8 0 a 3.4 3.4 0 1 0 -6.8 0" '+pen(1.25)+'/>' +
+      '<path d="M1 -1 m -1.5 0 a 1.5 1.5 0 1 0 3 0 a 1.5 1.5 0 1 0 -3 0" '+pen(1)+'/>' +
+      '<path d="M-4.6 1.6 L3 1.6" '+pen(1.2)+'/></g>';
+  }
+  function maybeGuest(st){
+    if(Math.random() > 0.07) return '';
+    var p = st.at(rand(0.3, 0.75));
+    return (Math.random()<0.5)
+      ? ladybug(p.x + rand(3,7), p.y, rand(-20,20))
+      : snail(p.x + rand(4,8), p.y);
+  }
+
+  /* ========== 植物 4種 ========== */
+  function genHa(h){
+    var st = curvyStem(h, rand(-9,9));
+    var s = '<path d="'+st.d+'" '+pen(1.6)+'/>';
+    var n = Math.max(3, Math.round(h/17));
+    var side = Math.random()<0.5 ? 1 : -1;
+    for(var i=0;i<n;i++){
+      var t = 0.15 + 0.78*(i/(n-1||1));
+      var p = st.at(t);
+      var sz = (14 - t*5) * rand(0.85,1.15);
+      var a = st.ang(t) + (side>0 ? rand(-58,-34) : rand(34,58));
+      s += leafAt(p.x, p.y, a, sz, side, Math.random()<0.12);
+      side *= -1;
+    }
+    s += leafAt(st.tipX, st.tipY, st.ang(1)+rand(-14,14), 9, 1, false);
+    s += maybeGuest(st);
+    return { svg:s };
+  }
+
+  function genTsuta(h){
+    var st = curvyStem(h, rand(-14,14), Math.min(h*0.3,26)*(Math.random()<0.5?-1:1));
+    var s = '<path d="'+st.d+'" '+pen(1.3)+'/>';
+    var n = Math.max(4, Math.round(h/10));
+    var side = Math.random()<0.5 ? 1 : -1;
+    for(var i=0;i<n;i++){
+      var t = 0.1 + 0.82*(i/(n-1||1));
+      var p = st.at(t);
+      var a = st.ang(t) + (side>0 ? rand(-72,-48) : rand(48,72));
+      s += roundLeaf(p.x, p.y, a, rand(3.4,5)*(1-t*0.25), Math.random()<0.1);
+      side *= -1;
+    }
+    var ta = st.ang(1)*Math.PI/180;
+    var cx = st.tipX + Math.cos(ta)*4, cy = st.tipY + Math.sin(ta)*4;
+    s += '<path d="M'+f(st.tipX)+' '+f(st.tipY)+' C '+f(cx+5)+' '+f(cy-1)+' '+f(cx+5)+' '+f(cy-7)+' '+f(cx)+' '+f(cy-6)+
+         ' C '+f(cx-3)+' '+f(cy-5.4)+' '+f(cx-2.6)+' '+f(cy-2.4)+' '+f(cx+0.6)+' '+f(cy-2.8)+'" '+pen(1.25)+'/>';
+    s += maybeGuest(st);
+    return { svg:s };
+  }
+
+  function genTsubomi(h){
+    var st = curvyStem(h, rand(-8,8));
+    var s = '<path d="'+st.d+'" '+pen(1.55)+'/>';
+    var n = Math.max(2, Math.round(h/22));
+    var side = Math.random()<0.5 ? 1 : -1;
+    for(var i=0;i<n;i++){
+      var t = 0.28 + 0.6*(i/(n-1||1));
+      var p = st.at(t);
+      var len = rand(8,15), a = (st.ang(t) + (side>0?-52:52))*Math.PI/180;
+      var bx = p.x + Math.cos(a)*len, by = p.y + Math.sin(a)*len;
+      s += '<path d="M'+f(p.x)+' '+f(p.y)+' Q '+f((p.x+bx)/2+side*2)+' '+f((p.y+by)/2)+' '+f(bx)+' '+f(by)+'" '+pen(1.25)+'/>';
+      s += '<circle cx="'+f(bx)+'" cy="'+f(by)+'" r="'+f(rand(3.4,5))+'" '+solid()+'/>';
+      s += leafAt(p.x + Math.cos(a)*len*0.4, p.y + Math.sin(a)*len*0.4, st.ang(t)+(side>0?-40:40), 7, side, false);
+      side *= -1;
+    }
+    s += '<circle cx="'+f(st.tipX)+'" cy="'+f(st.tipY)+'" r="'+f(rand(3,4.4))+'" '+solid()+'/>';
+    s += maybeGuest(st);
+    return { svg:s };
+  }
+
+  function genHana(h){
+    var st = curvyStem(h, rand(-7,7));
+    var s = '<path d="'+st.d+'" '+pen(1.55)+'/>';
+    var lv = Math.random()<0.6 ? 2 : 1;
+    for(var i=0;i<lv;i++){
+      var t = 0.3 + i*0.25;
+      var p = st.at(t), sd = i%2 ? -1 : 1;
+      s += leafAt(p.x, p.y, st.ang(t)+(sd>0?rand(-56,-38):rand(38,56)), rand(9,12), sd, false);
+    }
+    var r = rand(9,13.5);
+    var n = pick([7,8,8,9,10]);
+    s += '<g transform="translate('+f(st.tipX)+' '+f(st.tipY)+') rotate('+f(rand(0,40))+')">';
+    for(var k=0;k<n;k++){
+      var rr = r*rand(0.9,1.08);
+      s += '<ellipse cx="0" cy="'+f(-rr*0.78)+'" rx="'+f(rr*0.3)+'" ry="'+f(rr*0.8)+'" '+pen(1.3)+' transform="rotate('+f(k*360/n + rand(-4,4))+')"/>';
+    }
+    s += '<circle r="'+f(r*0.34)+'" '+pen(1.35)+'/>';
+    for(var m=0;m<5;m++){
+      s += '<circle cx="'+f(rand(-r*0.17,r*0.17))+'" cy="'+f(rand(-r*0.17,r*0.17))+'" r="0.75" '+solid()+' opacity=".8"/>';
+    }
+    s += '</g>';
+    if(Math.random()<0.35){
+      var bp = st.at(0.72);
+      var bx = bp.x + rand(9,15), by = bp.y - rand(6,14);
+      s += '<path d="M'+f(bp.x)+' '+f(bp.y)+' Q '+f((bp.x+bx)/2+3)+' '+f((bp.y+by)/2)+' '+f(bx)+' '+f(by)+'" '+pen(1.2)+'/>';
+      s += '<ellipse cx="'+f(bx)+'" cy="'+f(by)+'" rx="'+f(rand(3,4))+'" ry="'+f(rand(4.4,5.6))+'" '+pen(1.3)+'/>';
+    }
+    s += maybeGuest(st);
+    return { svg:s };
+  }
+
+  function genPlant(type, h){
+    if(type==='ha') return genHa(h);
+    if(type==='tsuta') return genTsuta(h);
+    if(type==='tsubomi') return genTsubomi(h);
+    return genHana(h);
+  }
+
+  /* ========== ねこ ========== */
+  var mood = 0;
+
+  function catFace(m){
+    var s = '';
+    if(m === 0){
+      s += '<path d="M-13 -50 C -10 -45.5 -5.5 -45.5 -3 -50" '+pen(1.6)+'/>';
+      s += '<path d="M3 -50 C 5.5 -45.5 10 -45.5 13 -50" '+pen(1.6)+'/>';
+      s += '<path d="M0 -40.5 C -1.5 -36.5 -5.5 -36.5 -6.5 -39.5" '+pen(1.4)+'/>';
+      s += '<path d="M0 -40.5 C 1.5 -36.5 5.5 -36.5 6.5 -39.5" '+pen(1.4)+'/>';
+    } else if(m === 1){
+      s += '<path d="M-13 -49 L-3.5 -49" '+pen(1.7)+'/><path d="M3.5 -49 L13 -49" '+pen(1.7)+'/>';
+      s += '<path d="M-11 -52.5 C -9 -54 -6 -54 -4.5 -52.8" '+pen(1.1)+' opacity=".6"/>';
+      s += '<path d="M4.5 -52.8 C 6 -54 9 -54 11 -52.5" '+pen(1.1)+' opacity=".6"/>';
+      s += '<path d="M-5 -38.5 L5 -38.5" '+pen(1.4)+'/>';
+    } else if(m === 2){
+      s += '<path d="M-14 -50.5 C -11.5 -46 -7 -46 -5 -50.5" '+pen(1.6)+'/>';
+      s += '<circle cx="7.5" cy="-49" r="2.4" '+solid()+'/>';
+      s += '<path d="M-1 -40.5 C -2.5 -37 -6 -37 -7 -39.5" '+pen(1.4)+'/>';
+      s += '<path d="M-1 -40.5 C 0.5 -37.5 3 -37.5 4 -39.5" '+pen(1.4)+'/>';
+    } else {
+      s += '<path d="M-13 -49 C -10 -53 -5.5 -53 -3 -49" '+pen(1.6)+'/>';
+      s += '<path d="M3 -49 C 5.5 -53 10 -53 13 -49" '+pen(1.6)+'/>';
+      s += '<path d="M0 -39.5 C -1.5 -35.5 -5.5 -36 -6.5 -39" '+pen(1.4)+'/>';
+      s += '<path d="M0 -39.5 C 1.5 -35.5 5.5 -36 6.5 -39" '+pen(1.4)+'/>';
+    }
+    s += '<path d="M-2.6 -42.5 L2.6 -42.5 L0 -40 Z" '+solid()+'/>';
+    return s;
+  }
+
+  function drawCat(){
+    var s = '';
+    s += '<path d="M20 -8 C 34 -6 40 -14 36 -22 C 34 -26 29 -25 29 -21" fill="#FCFBF6" stroke="'+LINE+'" stroke-width="1.6" stroke-linecap="round"/>';
+    s += '<path d="M-20 -52 L-24 -70 L-6 -60 Z" fill="#FCFBF6" stroke="'+LINE+'" stroke-width="1.6" stroke-linejoin="round"/>';
+    s += '<path d="M20 -52 L24 -70 L6 -60 Z" fill="#FCFBF6" stroke="'+LINE+'" stroke-width="1.6" stroke-linejoin="round"/>';
+    s += '<path d="M-22 0 C -24 -18 -18 -33 0 -33 C 18 -33 24 -18 22 0 Z" fill="#FCFBF6" stroke="'+LINE+'" stroke-width="1.7" stroke-linejoin="round"/>';
+    s += '<ellipse cx="0" cy="-47" rx="23" ry="20" fill="#FCFBF6" stroke="'+LINE+'" stroke-width="1.7"/>';
+    s += '<path d="M20 -52 L24 -70 L6 -60 C 8 -56 12 -53.5 20 -52 Z" '+solid()+'/>';
+    s += '<path d="M6 -60 C 12 -62 18 -60 21 -55.5 C 16 -52.5 9.5 -54 6 -60 Z" '+solid()+'/>';
+    s += catFace(mood);
+    s += '<path d="M-11 -44 L-25 -46.5 M-11 -42 L-26 -42 M-11 -40 L-25 -37.5" '+pen(1.05)+' opacity=".8"/>';
+    s += '<path d="M11 -44 L25 -46.5 M11 -42 L26 -42 M11 -40 L25 -37.5" '+pen(1.05)+' opacity=".8"/>';
+    s += '<path d="M-13 0 C -13 -8 -3 -8 -3 0" fill="#FCFBF6" stroke="'+LINE+'" stroke-width="1.5" stroke-linecap="round"/>';
+    s += '<path d="M-10 0 L-10 -3.4 M-6.4 0 L-6.4 -3.4" '+pen(1.1)+'/>';
+    s += '<path d="M3 0 C 3 -8 13 -8 13 0" fill="#FCFBF6" stroke="'+LINE+'" stroke-width="1.5" stroke-linecap="round"/>';
+    s += '<path d="M6 0 L6 -3.4 M9.6 0 L9.6 -3.4" '+pen(1.1)+'/>';
+    catLayer.innerHTML = '<g transform="translate('+CAT_X+' '+GROUND+')">'+s+'</g>';
+  }
+  drawCat();
+
+  function cycleMood(){
+    mood = (mood + 1) % 4;
+    drawCat();
+    hint.textContent = T.moodLine(T.moods[mood]);
+    hint.classList.remove('hide');
+    setTimeout(function(){ hint.classList.add('hide'); }, 1800);
+  }
+  function nearCat(x, y){
+    return Math.abs(x - CAT_X) < 26 && y > GROUND - 74 && y < GROUND + 2;
+  }
+
+  /* ========== 植える ========== */
+  function addPlant(x, gen){
+    planted = true;
+    hint.classList.add('hide');
+    var id = ++uid;
+    var g = el('g', {'data-id':id, transform:'translate('+f(x)+' '+GROUND+')'});
+    var inner = el('g', {'class':'sprout'});
+    inner.innerHTML = gen.svg;
+    g.appendChild(inner);
+    plantsLayer.appendChild(g);
+    plants.push({id:id, x:x, g:g});
+  }
+
+  function dropSeed(x, y, done){
+    var seed = el('circle', {cx:x, cy:y, r:2.2, fill:LINE});
+    fxLayer.appendChild(seed);
+    var start=null;
+    function step(ts){
+      if(!start) start=ts;
+      var t = Math.min((ts-start)/280, 1);
+      seed.setAttribute('cy', y + (GROUND-2-y)*t*t);
+      if(t<1) requestAnimationFrame(step);
+      else { seed.remove(); done(); }
+    }
+    requestAnimationFrame(step);
+  }
+
+  function mowOne(p){
+    plants = plants.filter(function(q){ return q.id!==p.id; });
+    p.g.firstChild.setAttribute('class','snip');
+    setTimeout(function(){ p.g.remove(); }, 660);
+  }
+
+  svg.addEventListener('pointerdown', function(e){
+    e.preventDefault();
+    var pt = svgPoint(e.clientX, e.clientY);
+    if(pt.y < TOP || pt.y > BOT) return;
+
+    if(nearCat(pt.x, pt.y)){ cycleMood(); return; }
+
+    var x = Math.min(Math.max(pt.x, 8), 392);
+    var y = Math.min(Math.max(pt.y, TOP+6), GROUND);
+    var h = Math.min(Math.max(GROUND - y, 30), 138);
+    dropSeed(x, y, function(){
+      addPlant(x, genPlant(tool, h*rand(0.94,1.06)));
+    });
+  });
+
+  /* ========== 道具 ========== */
+  var toolsBox = document.getElementById('tools');
+  toolsBox.addEventListener('click', function(e){
+    var b = e.target.closest('.packet');
+    if(!b) return;
+    tool = b.getAttribute('data-tool');
+    toolsBox.querySelectorAll('.packet').forEach(function(x){
+      var on = (x===b);
+      x.classList.toggle('active', on);
+      x.setAttribute('aria-pressed', on);
+    });
+    hint.textContent = planted ? T.grew[tool] : T.start;
+    hint.classList.remove('hide');
+    if(planted) setTimeout(function(){ hint.classList.add('hide'); }, 2000);
+  });
+
+  resetBtn.addEventListener('click', function(){
+    plants.slice().forEach(function(p, i){
+      setTimeout(function(){ mowOne(p); }, i*55);
+    });
+  });
+
+  applyLang(lang, false);
+})();
+</script>
+</body>
+</html>
