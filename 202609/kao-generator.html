@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>かおテープ ジェネレーター</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#E9E5DC; --card:#F6F3ED; --ink:#2E2C2A; --muted:#8B857C;
+  --rule:#D6D0C4; --tape:#A9B4DE; --mark:#EFC94C;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:var(--paper);}
+body{font-family:"Zen Maru Gothic",-apple-system,BlinkMacSystemFont,"Hiragino Maru Gothic ProN",sans-serif;
+  color:var(--ink);line-height:1.7;-webkit-font-smoothing:antialiased;padding-bottom:64px;}
+.wrap{max-width:560px;margin:0 auto;padding:0 20px;}
+
+header{padding:36px 0 22px;}
+.eyebrow{font-family:"DM Mono",ui-monospace,monospace;font-size:11px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--muted);}
+h1{font-size:26px;font-weight:700;letter-spacing:.02em;margin-top:6px;line-height:1.35;}
+.lede{font-size:14px;color:var(--muted);margin-top:10px;max-width:44ch;}
+
+.stage{margin:26px 0 8px;}
+.tape-frame{position:relative;padding:22px 0;
+  background:
+    repeating-linear-gradient(0deg,transparent 0 23px,rgba(0,0,0,.035) 23px 24px),
+    repeating-linear-gradient(90deg,transparent 0 23px,rgba(0,0,0,.035) 23px 24px);
+  border:1px solid var(--rule);border-radius:2px;overflow:hidden;}
+#tape{display:block;width:100%;height:132px;}
+.tape-cap{display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  margin-top:10px;font-size:12.5px;color:var(--muted);}
+.tape-cap b{font-weight:500;color:var(--ink);}
+.swatches{display:flex;gap:7px;}
+.sw{width:22px;height:22px;border-radius:50%;border:1px solid rgba(0,0,0,.14);
+  cursor:pointer;padding:0;transition:transform .12s ease;}
+.sw[aria-pressed="true"]{transform:scale(1.16);
+  box-shadow:0 0 0 2px var(--paper),0 0 0 3px var(--ink);}
+.sw:focus-visible{outline:2px solid var(--ink);outline-offset:3px;}
+
+.sec{margin-top:34px;}
+.sec-head{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+.sec-head h2{font-size:14px;font-weight:700;letter-spacing:.04em;white-space:nowrap;}
+.sec-head::after{content:"";flex:1;height:1px;background:var(--rule);}
+
+.kinds{display:flex;border:1px solid var(--ink);border-radius:2px;overflow:hidden;}
+.kinds button{flex:1;padding:9px 0;background:transparent;border:0;cursor:pointer;
+  font-family:inherit;font-size:13.5px;font-weight:500;color:var(--ink);
+  border-right:1px solid var(--ink);transition:background .12s ease;}
+.kinds button:last-child{border-right:0;}
+.kinds button[aria-pressed="true"]{background:var(--ink);color:var(--paper);}
+.kinds button:focus-visible{outline:2px solid var(--ink);outline-offset:-4px;}
+
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:14px;}
+.cell{position:relative;aspect-ratio:1;padding:0;cursor:pointer;background:var(--card);
+  border:1px solid var(--rule);border-radius:2px;transition:border-color .14s ease;}
+.cell canvas{display:block;width:100%;height:100%;}
+.cell:hover{border-color:var(--ink);}
+.cell:focus-visible{outline:2px solid var(--ink);outline-offset:2px;}
+.cell[aria-pressed="true"]{border-color:var(--ink);}
+.cell[aria-pressed="true"]::before{content:"";position:absolute;top:-7px;left:50%;
+  width:34px;height:15px;margin-left:-17px;background:var(--mark);opacity:.9;
+  transform:rotate(-3deg);box-shadow:0 1px 0 rgba(0,0,0,.06);}
+.cell.roll{animation:pop .26s ease both;}
+@keyframes pop{from{opacity:0;transform:scale(.9) rotate(-2deg);}to{opacity:1;transform:none;}}
+
+.hint{font-size:12.5px;color:var(--muted);margin-top:10px;}
+
+.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;}
+.lang{display:flex;border:1px solid var(--rule);border-radius:2px;overflow:hidden;flex:none;}
+.lang button{padding:5px 11px;background:transparent;border:0;cursor:pointer;
+  font-family:"DM Mono",ui-monospace,monospace;font-size:11px;letter-spacing:.08em;
+  color:var(--muted);border-right:1px solid var(--rule);transition:all .12s ease;}
+.lang button:last-child{border-right:0;}
+.lang button[aria-pressed="true"]{background:var(--ink);color:var(--paper);}
+.lang button:focus-visible{outline:2px solid var(--ink);outline-offset:-3px;}
+
+.row{display:flex;gap:9px;margin-top:14px;}
+.btn{flex:1;padding:13px 10px;cursor:pointer;font-family:inherit;font-size:14.5px;
+  font-weight:500;letter-spacing:.03em;background:var(--ink);color:var(--paper);
+  border:1px solid var(--ink);border-radius:2px;transition:opacity .12s ease;}
+.btn.ghost{background:transparent;color:var(--ink);}
+.btn:active{opacity:.75;}
+.btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px;}
+
+.chips-lab{font-size:13px;margin:18px 0 8px;}
+.chip-row{display:flex;flex-wrap:wrap;gap:6px;}
+.chip{padding:7px 14px;cursor:pointer;font-family:inherit;font-size:13px;
+  background:transparent;color:var(--ink);border:1px solid var(--rule);
+  border-radius:15px;transition:all .12s ease;}
+.chip:hover{border-color:var(--ink);}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+.chip:focus-visible{outline:2px solid var(--ink);outline-offset:2px;}
+
+/* --- 編集画面 --- */
+#editorSec{display:none;}
+.edit-stage{position:relative;background:var(--card);border:1px solid var(--ink);border-radius:2px;}
+.edit-stage::before{content:"";position:absolute;top:-8px;left:50%;
+  width:44px;height:17px;margin-left:-22px;background:var(--mark);opacity:.9;
+  transform:rotate(-3deg);box-shadow:0 1px 0 rgba(0,0,0,.06);z-index:1;}
+#editCv{display:block;width:100%;height:320px;touch-action:none;cursor:grab;}
+#editCv:active{cursor:grabbing;}
+
+@media (max-width:420px){h1{font-size:22px;}.grid{gap:7px;}#editCv{height:280px;}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="topbar">
+    <div>
+      <div class="eyebrow">maskingtape / mock 02 — v8</div>
+      <h1 id="t-title">かおテープ ジェネレーター</h1>
+    </div>
+    <div class="lang" id="lang">
+      <button data-lang="ja" aria-pressed="true">JA</button>
+      <button data-lang="en" aria-pressed="false">EN</button>
+    </div>
+  </div>
+  <p class="lede" id="t-lede">9つ ひいて、すきな かおを 3つまで えらぶ。そのまま テープに ながれます。</p>
+</header>
+
+<div class="stage">
+  <div class="tape-frame"><canvas id="tape"></canvas></div>
+  <div class="tape-cap">
+    <div id="t-cap">おなじ こたち。<b>ぜんぶ ちがう しゅんかん。</b></div>
+    <div class="swatches" id="swatches"></div>
+  </div>
+</div>
+
+<section class="sec" id="gridSec">
+  <div class="sec-head"><h2 id="t-h-draw">だれを ひく</h2></div>
+  <div class="kinds" id="kinds">
+    <button data-kind="cat" aria-pressed="true">ねこ</button>
+    <button data-kind="human" aria-pressed="false">ひと</button>
+    <button data-kind="mix" aria-pressed="false">まぜる</button>
+  </div>
+  <div class="grid" id="grid"></div>
+  <p class="hint" id="t-hint-grid">タップすると おおきく ひらいて、テープに はられます（3つまで）。</p>
+  <div class="row">
+    <button class="btn" id="rollAll">ぜんぶ ひきなおす</button>
+  </div>
+</section>
+
+<section class="sec" id="editorSec">
+  <div class="sec-head"><h2 id="t-h-edit">この こを いじる</h2></div>
+  <div class="edit-stage"><canvas id="editCv"></canvas></div>
+  <p class="hint" id="t-hint-edit">かおを ゆびで ひっぱると、むきが かわります。うえの テープも いっしょに かわります。</p>
+  <div class="chips-lab" id="t-lab-stache">ヒゲ</div>
+  <div class="chip-row" id="editStache"></div>
+  <div class="row">
+    <button class="btn ghost" id="lookHere">こっちを むいて</button>
+  </div>
+  <div class="row">
+    <button class="btn ghost" id="unpick">テープから はずす</button>
+    <button class="btn" id="backBtn">もどる</button>
+  </div>
+</section>
+
+</div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   1. シード付き乱数
+   ============================================================ */
+function mulberry32(a){
+  return function(){
+    a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+
+/* ============================================================
+   2. 手描き線プリミティブ
+   ============================================================ */
+function strokePath(ctx, pts, rng, rough, passes){
+  passes = passes || 2;
+  const j = () => (rng()*2-1)*rough;
+  for(let p=0;p<passes;p++){
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0]+j(), pts[0][1]+j());
+    for(let i=1;i<pts.length;i++){
+      const a=pts[i-1], b=pts[i], dx=b[0]-a[0], dy=b[1]-a[1];
+      ctx.bezierCurveTo(
+        a[0]+dx*0.5 +j()*1.3, a[1]+dy*0.5 +j()*1.3,
+        a[0]+dx*0.75+j()*1.3, a[1]+dy*0.75+j()*1.3,
+        b[0]+j()*0.7, b[1]+j()*0.7
+      );
+    }
+    ctx.stroke();
+  }
+}
+function arcPts(cx,cy,rx,ry,a0,a1,n){
+  n=n||12; const pts=[];
+  for(let i=0;i<=n;i++){const t=a0+(a1-a0)*i/n;
+    pts.push([cx+Math.cos(t)*rx, cy+Math.sin(t)*ry]);}
+  return pts;
+}
+function blob(ctx,cx,cy,rx,ry,rng,rough){
+  strokePath(ctx, arcPts(cx,cy,rx,ry,0,Math.PI*2.12,14), rng, rough);
+}
+function fillBlob(ctx,cx,cy,rx,ry){
+  ctx.beginPath(); ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2); ctx.fill();
+}
+function scribbleDot(ctx,x,y,r,rng,R){
+  const pts=[];
+  for(let i=0;i<=18;i++){
+    const a=i/18*Math.PI*4.6, rr2=r*(0.25+0.75*i/18);
+    pts.push([x+Math.cos(a)*rr2, y+Math.sin(a)*rr2*0.85]);
+  }
+  strokePath(ctx,pts,rng,R*0.8,1);
+}
+
+/* ============================================================
+   3. ラフな3D頭部モデル
+   ============================================================ */
+function place(u,v,F){
+  const H=F.head, yaw=F.pose.yaw, pitch=F.pose.pitch;
+  const x0=H.rx*Math.cos(v)*Math.sin(u);
+  const y0=H.ry*Math.sin(v);
+  const z0=H.rz*Math.cos(v)*Math.cos(u);
+  const x1= x0*Math.cos(yaw)+z0*Math.sin(yaw);
+  const z1=-x0*Math.sin(yaw)+z0*Math.cos(yaw);
+  const y1= y0*Math.cos(pitch)-z1*Math.sin(pitch);
+  const z2= y0*Math.sin(pitch)+z1*Math.cos(pitch);
+  return {x:x1, y:-y1, sq:Math.max(0.14,z2/H.rz), vis:z2>-H.rz*0.12};
+}
+function headW(F){return Math.hypot(F.head.rx*Math.cos(F.pose.yaw), F.head.rz*Math.sin(F.pose.yaw));}
+
+/* ============================================================
+   4-a. 顔のパーツ
+   ============================================================ */
+function drawHead(ctx,F,rng,R,jawOnly){
+  const H=F.head, hw=headW(F);
+  const hh=Math.hypot(H.ry*Math.cos(F.pose.pitch),H.rz*Math.sin(F.pose.pitch));
+  const e=2/H.pow, pts=[];
+  const a0 = jawOnly ? Math.PI*0.98 : 0.35;
+  const a1 = jawOnly ? Math.PI*2.02 : 0.35+Math.PI*2.14;
+  const n  = jawOnly ? 16 : 32;
+  for(let i=0;i<=n;i++){
+    const t=a0+(a1-a0)*i/n, c=Math.cos(t), s=Math.sin(t);
+    pts.push([hw*Math.sign(c)*Math.pow(Math.abs(c),e), -hh*Math.sign(s)*Math.pow(Math.abs(s),e)]);
+  }
+  strokePath(ctx,pts,rng,R);
+}
+
+function drawEars(ctx,F,rng,R){
+  [-1,1].forEach(function(d){
+    const p=place(d*F.ear.u,F.ear.v,F); if(!p.vis) return;
+    const w=F.ear.size*Math.max(0.35,p.sq), h=F.ear.size*F.ear.tall;
+    if(F.ear.style==='round'){
+      strokePath(ctx,[[p.x-w*0.85,p.y+5],[p.x-w*0.7,p.y-h*0.8],
+        [p.x+d*w*0.25,p.y-h],[p.x+w*0.7,p.y-h*0.7],[p.x+w*0.85,p.y+4]],rng,R);
+    }else{
+      strokePath(ctx,[[p.x-w*0.9,p.y+6],[p.x+d*w*0.45,p.y-h],[p.x+w*0.9,p.y+4]],rng,R);
+    }
+  });
+}
+
+function lashes(ctx,s,side,rng,R){
+  for(let i=0;i<2;i++){
+    const ang = side>0 ? (Math.PI*1.82-i*0.30) : (Math.PI*1.18+i*0.30);
+    const bx=Math.cos(ang)*s*0.52, by=Math.sin(ang)*s*0.62;
+    strokePath(ctx,[[bx,by],[bx*1.6,by*1.55]],rng,R*0.5,1);
+  }
+}
+
+function drawEye(ctx,p,F,rng,R,side){
+  if(!p.vis) return;
+  const s=F.eye.size, k=Math.max(0.2,p.sq);
+  ctx.save(); ctx.translate(p.x,p.y); ctx.scale(k,1);
+  const st=(side<0 && F.eye.wink) ? 'happy' : F.eye.style;
+  if(st==='dot'){
+    ctx.fillStyle=ctx.strokeStyle; fillBlob(ctx,0,0,s*0.36,s*0.42);
+  }else if(st==='ring'){
+    blob(ctx,0,0,s*0.5,s*0.55,rng,R*0.8);
+    ctx.fillStyle=ctx.strokeStyle; fillBlob(ctx,s*0.06,s*0.05,s*0.21,s*0.23);
+  }else if(st==='oval'){
+    blob(ctx,0,0,s*0.42,s*0.66,rng,R*0.8);
+    ctx.fillStyle=ctx.strokeStyle; fillBlob(ctx,0,s*0.08,s*0.22,s*0.28);
+  }else if(st==='happy'){
+    strokePath(ctx,arcPts(0,s*0.3,s*0.55,s*0.55,Math.PI*1.15,Math.PI*1.85,8),rng,R*0.8);
+  }else{
+    strokePath(ctx,arcPts(0,-s*0.15,s*0.55,s*0.4,Math.PI*0.15,Math.PI*0.85,8),rng,R*0.8);
+  }
+  if(F.eye.lash && st!=='happy') lashes(ctx,s,side,rng,R);
+  ctx.restore();
+}
+
+function drawBrow(ctx,p,F,rng,R){
+  if(!p.vis || F.brow.style==='none') return;
+  const w=F.brow.w*Math.max(0.2,p.sq), y=p.y-F.brow.lift;
+  strokePath(ctx,arcPts(p.x,y+4,w*0.9,w*0.45,Math.PI*1.14,Math.PI*1.86,7),rng,R*0.6,1);
+}
+
+function drawBlush(ctx,F,rng,R){
+  if(!F.blush) return;
+  [-1,1].forEach(function(d){
+    const p=place(d*0.78, F.eye.v-0.14, F); if(!p.vis) return;
+    for(let i=0;i<2;i++){
+      const x=p.x+(i-0.5)*7*Math.max(0.3,p.sq);
+      strokePath(ctx,[[x+2,p.y-3],[x-2,p.y+3]],rng,R*0.5,1);
+    }
+  });
+}
+
+function drawNose(ctx,F,rng,R){
+  let st=F.nose.style;
+  if(st==='none' && F.stache.style!=='none' && F.stache.style!=='neko') st='dot';
+  const p=place(0,F.nose.v,F); if(!p.vis||st==='none') return;
+  const s=F.nose.size;
+  if(st==='tri'){
+    ctx.fillStyle=ctx.strokeStyle; ctx.beginPath();
+    ctx.moveTo(p.x-s*0.6,p.y-s*0.4); ctx.lineTo(p.x+s*0.6,p.y-s*0.4);
+    ctx.lineTo(p.x,p.y+s*0.5); ctx.closePath(); ctx.fill();
+  }else{
+    scribbleDot(ctx,p.x,p.y,s*0.55,rng,R);
+  }
+}
+
+function drawMouth(ctx,F,rng,R){
+  const p=place(0,F.mouth.v,F); if(!p.vis) return;
+  const w=F.mouth.w*Math.max(0.25,p.sq), c=F.mouth.curve, st=F.mouth.style;
+  if(st==='cat'){
+    strokePath(ctx,arcPts(p.x-w*0.42,p.y,w*0.42,w*0.34*(1+c*0.5),Math.PI*0.06,Math.PI*0.94,8),rng,R*0.9);
+    strokePath(ctx,arcPts(p.x+w*0.42,p.y,w*0.42,w*0.34*(1+c*0.5),Math.PI*0.06,Math.PI*0.94,8),rng,R*0.9);
+  }else if(st==='oh'){
+    blob(ctx,p.x,p.y+w*0.1,w*0.3,w*0.38*(1+c*0.3),rng,R*0.9);
+  }else{
+    const d=c>=0?1:-1;
+    strokePath(ctx,arcPts(p.x,p.y-d*w*0.3*Math.abs(c),w*0.8,w*0.6*Math.abs(c)+3,
+      d>0?Math.PI*0.15:Math.PI*1.15, d>0?Math.PI*0.85:Math.PI*1.85, 9),rng,R);
+  }
+}
+
+/* ============================================================
+   4-b. ヒゲ
+   ============================================================ */
+function catWhiskers(ctx,F,rng,R,n,len,vpos){
+  if(!n) return;
+  const v=(vpos!==undefined)?vpos:F.nose.v-0.04;
+  [-1,1].forEach(function(d){
+    const p=place(d*0.42,v,F); if(!p.vis) return;
+    for(let i=0;i<n;i++){
+      const off=(i-(n-1)/2)*5.5, L=len*Math.max(0.3,p.sq);
+      strokePath(ctx,[[p.x+d*7,p.y+off*0.5],[p.x+d*(7+L),p.y+off-1]],rng,R*0.7,1);
+    }
+  });
+}
+
+function stacheWing(ctx,d,w,style,rng,R,lw){
+  const strands=9, spread=w*0.34;
+  const tipX=d*w,       tipY = style==='kuru' ? -w*0.16 : w*0.40;
+  const cX  =d*w*0.52,  cY   = style==='kuru' ?  w*0.26 : w*0.30;
+  ctx.lineWidth=lw*0.85;
+  for(let k=0;k<strands;k++){
+    const off=((k/(strands-1))-0.5)*spread;
+    const t0=rng()*0.10, t1=0.72+rng()*0.28;
+    const pts=[];
+    for(let s2=0;s2<=4;s2++){
+      const t=t0+(t1-t0)*s2/4, mt=1-t;
+      let x=mt*mt*(d*w*0.07) + 2*mt*t*cX + t*t*tipX;
+      let y=mt*mt*(-w*0.06)  + 2*mt*t*cY + t*t*tipY;
+      y+=off*(0.16+t*1.15);          /* ねもとは そろえ、さきで ひらく */
+      x+=-off*0.22*d*t;
+      pts.push([x,y]);
+    }
+    strokePath(ctx,pts,rng,R*1.5,1);
+  }
+  ctx.lineWidth=lw;
+  if(style==='kuru'){
+    for(let k=0;k<3;k++){
+      const pts=[];
+      for(let i=0;i<=7;i++){
+        const a=Math.PI*0.62-(i/7)*Math.PI*1.45;
+        const r2=(w*0.20-k*w*0.045)*(1-i*0.05);
+        pts.push([d*(w*1.02+Math.cos(a)*r2), -w*0.16+Math.sin(a)*r2]);
+      }
+      strokePath(ctx,pts,rng,R*1.2,1);
+    }
+  }
+}
+
+function drawStache(ctx,F,rng,R){
+  const st=F.stache.style; if(st==='none') return;
+  if(st==='neko'){
+    if(F.kind==='cat' && F.whisk.n>0) return;
+    catWhiskers(ctx,F,rng,R,3,F.stache.size*0.8,F.mouth.v+0.16);
+    return;
+  }
+  /* はなと くちの あいだ。めより 下に くるよう クランプ */
+  const vs=Math.min(F.mouth.v+0.11, F.nose.v-0.04, F.eye.v-0.17);
+  const p=place(0,vs,F); if(!p.vis) return;
+  /* かおの はばに たいして 大きく。落書きヒゲは 顔幅の 8わり ちかく ある */
+  const w=headW(F)*(F.kind==='cat'?0.40:0.44)*Math.max(0.3,p.sq);
+  ctx.save(); ctx.translate(p.x,p.y);
+  stacheWing(ctx,-1,w,st,rng,R,ctx.lineWidth);
+  stacheWing(ctx, 1,w,st,rng,R,ctx.lineWidth);
+  ctx.restore();
+}
+
+/* ============================================================
+   4-c. かみがた
+   ============================================================ */
+function helmetPath(hw,hh,dropY,shift){
+  const pts=[];
+  pts.push([shift-hw*0.72, dropY+hh*0.05]);
+  pts.push([shift-hw*1.05, dropY]);
+  pts.push([shift-hw*1.16, dropY*0.45-hh*0.05]);
+  arcPts(shift,0,hw*1.13,hh*1.13,Math.PI*0.99,Math.PI*2.01,16).forEach(p=>pts.push(p));
+  pts.push([shift+hw*1.16, dropY*0.45-hh*0.05]);
+  pts.push([shift+hw*1.05, dropY]);
+  pts.push([shift+hw*0.72, dropY+hh*0.05]);
+  return pts;
+}
+function fringeLine(ctx,hw,hh,eyeY,shift,rng,R){
+  const yf=eyeY-hh*0.22, pts=[], nb=3;
+  for(let i=0;i<=nb*6;i++){
+    const t=i/(nb*6);
+    pts.push([shift+(-0.58+1.16*t)*hw, yf+hh*0.08*Math.abs(Math.sin(t*Math.PI*nb))]);
+  }
+  strokePath(ctx,pts,rng,R*0.8,1);
+}
+function ribbon(ctx,x,y,s,rng,R){
+  strokePath(ctx,[[x,y],[x-s,y-s*0.7],[x-s*1.02,y+s*0.26],[x,y]],rng,R*0.8,1);
+  strokePath(ctx,[[x,y],[x+s,y-s*0.7],[x+s*1.02,y+s*0.26],[x,y]],rng,R*0.8,1);
+  ctx.fillStyle=ctx.strokeStyle; fillBlob(ctx,x,y,s*0.16,s*0.16);
+}
+function flowerAcc(ctx,x,y,s,rng,R){
+  for(let i=0;i<5;i++){
+    const a=i/5*Math.PI*2;
+    blob(ctx,x+Math.cos(a)*s*0.6,y+Math.sin(a)*s*0.6,s*0.34,s*0.34,rng,R*0.5);
+  }
+  ctx.fillStyle=ctx.strokeStyle; fillBlob(ctx,x,y,s*0.18,s*0.18);
+}
+function isHelmetFam(st){return st==='helmet'||st==='buns';}
+
+function drawHair(ctx,F,rng,R){
+  const hr=F.hair, st=hr.style;
+  if(st==='none') return;
+  const hw=headW(F), hh=F.head.ry;
+  const shift=Math.sin(F.pose.yaw)*F.head.rz*0.10;
+
+  if(st==='tuft'){
+    for(let i=0;i<hr.n;i++){
+      const t=-Math.PI*0.72+(Math.PI*0.44)*(i/(hr.n-1||1));
+      const x=Math.cos(t)*hw*0.94+shift, y=Math.sin(t)*hh*0.94;
+      strokePath(ctx,[[x,y],[x+Math.cos(t)*hr.len,y+Math.sin(t)*hr.len]],rng,R*0.8,1);
+    }
+    return;
+  }
+  if(st==='cloud'){
+    const nb=hr.n, pts=[];
+    for(let i=0;i<=nb*6;i++){
+      const t=-Math.PI*0.92+(Math.PI*0.84)*(i/(nb*6));
+      const bump=1.02+0.13*Math.abs(Math.sin(i/(nb*6)*Math.PI*nb));
+      pts.push([Math.cos(t)*hw*bump+shift, Math.sin(t)*hh*bump]);
+    }
+    strokePath(ctx,pts,rng,R);
+    return;
+  }
+
+  const dropY = st==='helmet' ? hh*(0.22+hr.drop*1.05) : hh*(0.22+hr.drop*0.35);
+  strokePath(ctx, helmetPath(hw,hh,dropY,shift), rng, R);
+
+  const eyeY=-hh*Math.sin(F.eye.v);
+  if(hr.fringe) fringeLine(ctx,hw,hh,eyeY,shift,rng,R);
+  if(st==='buns') [-1,1].forEach(d=>blob(ctx,shift+d*hw*0.60,-hh*1.02,hh*0.21,hh*0.19,rng,R*0.8));
+
+  if(hr.acc==='bow')    ribbon(ctx,shift-hw*0.58,-hh*0.86,9,rng,R);
+  if(hr.acc==='flower') flowerAcc(ctx,shift+hw*0.62,-hh*0.82,8,rng,R);
+}
+
+/* ============================================================
+   5. 顔を1枚描く
+   ============================================================ */
+function drawFace(ctx,F,w,h,pad){
+  const rng=mulberry32(F.seed);
+  const S=Math.min(w,h)/(pad||210);
+  ctx.save();
+  ctx.translate(w/2,h/2+h*0.02); ctx.scale(S,S); ctx.rotate(F.pose.roll);
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.strokeStyle=F.ink; ctx.fillStyle=F.ink; ctx.lineWidth=F.line.width;
+  const R=F.line.rough;
+  const jawOnly = F.kind==='human' && isHelmetFam(F.hair.style);
+
+  if(F.kind==='cat') drawEars(ctx,F,rng,R);
+  drawHead(ctx,F,rng,R,jawOnly);
+  if(F.kind==='human') drawHair(ctx,F,rng,R);
+
+  const eL=place(-F.eye.u,F.eye.v,F), eR=place(F.eye.u,F.eye.v,F);
+  drawBrow(ctx,eL,F,rng,R); drawBrow(ctx,eR,F,rng,R);
+  drawEye(ctx,eL,F,rng,R,-1); drawEye(ctx,eR,F,rng,R,1);
+  drawBlush(ctx,F,rng,R);
+  drawNose(ctx,F,rng,R);
+  drawMouth(ctx,F,rng,R);
+  if(F.kind==='cat') catWhiskers(ctx,F,rng,R,F.whisk.n,F.whisk.len);
+  drawStache(ctx,F,rng,R);
+  ctx.restore();
+}
+
+/* ============================================================
+   6. ランダムな顔
+   ============================================================ */
+function randomFace(kind,seed,slot){
+  const r=mulberry32(seed*2654435761 % 2147483647);
+  const pick=a=>a[Math.floor(r()*a.length)];
+  const rr=(a,b)=>a+r()*(b-a);
+  if(kind==='mix') kind = r()<0.5 ? 'cat' : 'human';
+  const cat=kind==='cat';
+  const long=(slot%2===1)!==(r()<0.22);
+
+  const F={
+    seed:seed, kind:kind, ink:'#2E2C2A',
+    head: cat
+      ? { rx:rr(60,72), ry:rr(52,62), rz:60, pow:rr(2.4,3.0) }
+      : { rx:rr(56,66), ry:rr(58,68), rz:58, pow:rr(2.2,2.7) },
+    pose:{ yaw:rr(-0.16,0.16), pitch:rr(-0.08,0.08), roll:rr(-0.05,0.05) },
+    eye: cat
+      ? { style:pick(['dot','dot','ring','happy','sleepy']), size:rr(13,20),
+          u:rr(0.45,0.62), v:rr(-0.10,0.04), wink:r()<0.12, lash:false }
+      : { style:pick(['dot','dot','ring','oval','happy']), size:rr(12,19),
+          u:rr(0.50,0.66), v:rr(-0.16,-0.02), wink:r()<0.12, lash:false },
+    brow:{ style: cat?'none':pick(['none','none','none','thin']), w:rr(7,10), lift:rr(12,18) },
+    nose: cat
+      ? { style:pick(['tri','tri','tri','dot']), size:rr(6,9),  v:rr(-0.16,-0.06) }
+      : { style:pick(['none','none','none','dot']), size:rr(5,7), v:-0.24 },
+    mouth: cat
+      ? { style:pick(['cat','cat','cat','curve','oh']), w:rr(12,20), curve:rr(0.1,0.9), v:rr(-0.32,-0.22) }
+      : { style:pick(['curve','curve','curve','oh','cat']), w:rr(10,17), curve:rr(0.05,0.95), v:rr(-0.40,-0.30) },
+    ear:{ style:pick(['tri','tri','round','round']), size:rr(18,27), tall:rr(0.8,1.25),
+          u:rr(0.60,0.80), v:rr(0.80,0.98) },
+    whisk:{ n: cat?pick([2,2,3]):0, len:rr(16,26) },
+    blush:false,
+    hair: cat
+      ? { style:'none', drop:0, fringe:false, acc:'none', n:5, len:10 }
+      : ( long
+        ? { style:pick(['helmet','helmet','helmet','buns']), drop:rr(0.45,1.0),
+            fringe:r()<0.4, acc:'none', n:Math.floor(rr(3,6)), len:rr(7,13) }
+        : { style:pick(['tuft','tuft','cloud','helmet','none']), drop:rr(0.02,0.18),
+            fringe:r()<0.15, acc:'none', n:Math.floor(rr(3,6)), len:rr(7,13) } ),
+    stache:{ style:'none', size:rr(18,26) },
+    line:{ rough:rr(0.6,1.8), width:rr(2.7,3.3) }
+  };
+
+  if(cat){
+    const charm=pick(['blush','blush','stache','none','none','none']);
+    if(charm==='blush') F.blush=true;
+    if(charm==='stache') F.stache.style=pick(['moja','moja','kuru']);
+  }else{
+    let charm=pick(['stache','stache','stache','blush','blush','lash','acc','none','none']);
+    if(charm==='acc'  && !isHelmetFam(F.hair.style)) charm='blush';
+    if(charm==='lash' && !long) charm=(r()<0.5?'stache':'none');
+    if(charm==='stache') F.stache.style=pick(['moja','moja','kuru','neko']);
+    if(charm==='blush')  F.blush=true;
+    if(charm==='lash')   F.eye.lash=true;
+    if(charm==='acc')    F.hair.acc=pick(['bow','flower']);
+  }
+  return F;
+}
+
+/* ============================================================
+   7. UI
+   ============================================================ */
+const TAPES=['#A9B4DE','#EFC94C','#E9A9A1','#9FC7B0','#E9E5DC'];
+
+/* ============================================================
+   7-a. ことば
+   ============================================================ */
+const STR={
+  ja:{
+    title:'かおテープ ジェネレーター',
+    lede:'9つ ひいて、すきな かおを 3つまで えらぶ。そのまま テープに ながれます。',
+    cap:'おなじ こたち。<b>ぜんぶ ちがう しゅんかん。</b>',
+    hDraw:'だれを ひく', hEdit:'この こを いじる',
+    hintGrid:'タップすると おおきく ひらいて、テープに はられます（3つまで）。',
+    hintEdit:'かおを ゆびで ひっぱると、むきが かわります。うえの テープも いっしょに かわります。',
+    labStache:'ヒゲ',
+    roll:'ぜんぶ ひきなおす', look:'こっちを むいて',
+    unpick:'テープから はずす', back:'もどる',
+    kinds:{cat:'ねこ', human:'ひと', mix:'まぜる'},
+    stache:{none:'なし', moja:'もじゃ', kuru:'くるりん', neko:'ねこヒゲ'},
+    tapeAria:'テープの いろ '
+  },
+  en:{
+    title:'Face Tape Generator',
+    lede:'Draw nine. Keep up to three. They run straight onto the tape.',
+    cap:'Same settings. <b>Every face different.</b>',
+    hDraw:'Who to draw', hEdit:'Fiddle with this one',
+    hintGrid:'Tap a face to open it up. It gets taped down too (up to three).',
+    hintEdit:'Drag the face to turn its head. The tape above turns with it.',
+    labStache:'Moustache',
+    roll:'Draw nine more', look:'Look at me',
+    unpick:'Take off the tape', back:'Back',
+    kinds:{cat:'Cats', human:'People', mix:'Mixed'},
+    stache:{none:'None', moja:'Bushy', kuru:'Curly', neko:'Cat whiskers'},
+    tapeAria:'Tape colour '
+  }
+};
+let lang='ja';
+const T=()=>STR[lang];
+const STACHE_KEYS=['none','moja','kuru','neko'];
+
+function applyLang(){
+  const t=T();
+  document.documentElement.lang=lang;
+  document.getElementById('t-title').textContent=t.title;
+  document.getElementById('t-lede').textContent=t.lede;
+  document.getElementById('t-cap').innerHTML=t.cap;
+  document.getElementById('t-h-draw').textContent=t.hDraw;
+  document.getElementById('t-h-edit').textContent=t.hEdit;
+  document.getElementById('t-hint-grid').textContent=t.hintGrid;
+  document.getElementById('t-hint-edit').textContent=t.hintEdit;
+  document.getElementById('t-lab-stache').textContent=t.labStache;
+  document.getElementById('rollAll').textContent=t.roll;
+  document.getElementById('lookHere').textContent=t.look;
+  document.getElementById('unpick').textContent=t.unpick;
+  document.getElementById('backBtn').textContent=t.back;
+  document.querySelectorAll('#kinds button').forEach(function(b){
+    b.textContent=t.kinds[b.dataset.kind];
+  });
+  document.querySelectorAll('#swatches .sw').forEach(function(b,i){
+    b.setAttribute('aria-label',t.tapeAria+(i+1));
+  });
+  if(editIdx!==null) buildEditChips();
+}
+
+let kind='cat', faces=[], picks=[0], tapeColor=TAPES[0], editIdx=null;
+
+function fit(cv,cssH){
+  const dpr=Math.min(window.devicePixelRatio||1,2.5);
+  const w=cv.clientWidth, h=cssH||cv.clientHeight;
+  cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr);
+  const ctx=cv.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,w,h);
+  return {ctx:ctx,w:w,h:h};
+}
+
+function paintTape(){
+  const cv=document.getElementById('tape');
+  const g=fit(cv,132), ctx=g.ctx, w=g.w, h=g.h;
+  const rng=mulberry32(9001), top=h*0.10, bot=h*0.90;
+  ctx.save(); ctx.rotate(-0.006);
+  ctx.beginPath(); ctx.moveTo(-4,top);
+  for(let x=0;x<=w+8;x+=9) ctx.lineTo(x-4, top+(rng()*2-1)*1.6);
+  for(let x=w+8;x>=-4;x-=9) ctx.lineTo(x-4, bot+(rng()*2-1)*1.6);
+  ctx.closePath();
+  ctx.globalAlpha=0.88; ctx.fillStyle=tapeColor; ctx.fill();
+  ctx.globalAlpha=0.10; ctx.strokeStyle='#000'; ctx.lineWidth=1; ctx.stroke();
+  ctx.globalAlpha=0.07;
+  for(let y=top+5;y<bot;y+=6){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
+  ctx.globalAlpha=1;
+
+  if(!picks.length){ctx.restore();return;}
+  const band=bot-top, size=band*0.94, step=size*0.84, n=Math.ceil(w/step)+1;
+  for(let i=0;i<n;i++){
+    const F=faces[picks[i%picks.length]]; if(!F) continue;
+    const rj=mulberry32(F.seed+i*7919);
+    const v=JSON.parse(JSON.stringify(F));
+    v.seed=F.seed+i*101;
+    v.pose.yaw   = clamp(F.pose.yaw  +(rj()*2-1)*0.10, -0.55, 0.55);
+    v.pose.roll  = clamp(F.pose.roll +(rj()*2-1)*0.04, -0.12, 0.12);
+    v.mouth.curve= clamp(F.mouth.curve+(rj()*2-1)*0.18, -1, 1);
+    v.ink= tapeColor==='#EFC94C' ? '#3A2F14' : '#2E2C2A';
+    ctx.save();
+    ctx.translate(i*step+step*0.5,(top+bot)/2+(rj()*2-1)*3);
+    ctx.rotate((rj()*2-1)*0.06);
+    ctx.translate(-size/2,-size/2);
+    drawFace(ctx,v,size,size,235);
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+function buildGrid(animate){
+  const grid=document.getElementById('grid'); grid.innerHTML='';
+  faces.forEach(function(F,i){
+    const b=document.createElement('button');
+    b.className='cell'+(animate?' roll':'');
+    b.style.animationDelay=(i*26)+'ms';
+    b.setAttribute('aria-pressed', picks.indexOf(i)>=0?'true':'false');
+    b.setAttribute('aria-label','かお '+(i+1));
+    const cv=document.createElement('canvas');
+    b.appendChild(cv); grid.appendChild(b);
+    const g=fit(cv,cv.clientHeight); drawFace(g.ctx,F,g.w,g.h,225);
+    b.addEventListener('click',function(){ tapCell(i); });
+  });
+}
+function redrawCell(i){
+  const cv=document.querySelectorAll('.cell canvas')[i];
+  if(!cv) return;
+  const g=fit(cv,cv.clientHeight); drawFace(g.ctx,faces[i],g.w,g.h,225);
+}
+function flagCells(){
+  document.querySelectorAll('.cell').forEach(function(c,k){
+    c.setAttribute('aria-pressed', picks.indexOf(k)>=0?'true':'false');
+  });
+}
+/* タップ＝ひらく。ひらいた こは じどうで テープに はられる */
+function tapCell(i){
+  if(picks.indexOf(i)<0){ picks.push(i); if(picks.length>3) picks.shift(); }
+  flagCells(); paintTape();
+  openEditor(i);
+}
+function rollAll(){
+  const base=Math.floor(Math.random()*900000)+1000;
+  faces=[]; for(let i=0;i<9;i++) faces.push(randomFace(kind,base+i*37,i));
+  picks=[0]; editIdx=null;
+  document.getElementById('editorSec').style.display='none';
+  document.getElementById('gridSec').style.display='';
+  buildGrid(true);
+  requestAnimationFrame(paintTape);
+}
+
+/* ============================================================
+   8. 編集画面
+   ============================================================ */
+function openEditor(i){
+  editIdx=i;
+  document.getElementById('gridSec').style.display='none';
+  document.getElementById('editorSec').style.display='block';  /* '' だとCSSのnoneに戻ってしまう */
+  buildEditChips(); drawEditor();
+}
+function closeEditor(){
+  editIdx=null;
+  document.getElementById('editorSec').style.display='none';
+  document.getElementById('gridSec').style.display='';
+  buildGrid(false); paintTape();
+}
+function drawEditor(){
+  if(editIdx===null) return;
+  const cv=document.getElementById('editCv');
+  const g=fit(cv,cv.clientHeight);
+  drawFace(g.ctx,faces[editIdx],g.w,g.h,205);
+}
+function buildEditChips(){
+  if(editIdx===null) return;
+  const F=faces[editIdx];
+  const row=document.getElementById('editStache'); row.innerHTML='';
+  STACHE_KEYS.forEach(function(key){
+    const b=document.createElement('button'); b.className='chip';
+    b.textContent=T().stache[key];
+    b.setAttribute('aria-pressed', F.stache.style===key?'true':'false');
+    b.addEventListener('click',function(){
+      F.stache.style=key;
+      buildEditChips(); drawEditor(); paintTape();
+    });
+    row.appendChild(b);
+  });
+}
+
+/* --- 顔をひっぱって むきを かえる --- */
+let drag=null, raf=0;
+function scheduleEditPaint(){
+  if(raf) return;
+  raf=requestAnimationFrame(function(){ raf=0; drawEditor(); paintTape(); });
+}
+const ecv=document.getElementById('editCv');
+ecv.addEventListener('pointerdown',function(e){
+  if(editIdx===null) return;
+  const F=faces[editIdx];
+  drag={x:e.clientX,y:e.clientY,yaw:F.pose.yaw,pitch:F.pose.pitch};
+  ecv.setPointerCapture(e.pointerId);
+});
+ecv.addEventListener('pointermove',function(e){
+  if(!drag||editIdx===null) return;
+  const F=faces[editIdx];
+  F.pose.yaw  =clamp(drag.yaw  +(e.clientX-drag.x)*0.0045, -0.55, 0.55);
+  F.pose.pitch=clamp(drag.pitch+(e.clientY-drag.y)*0.0035, -0.24, 0.24);
+  scheduleEditPaint();
+});
+['pointerup','pointercancel'].forEach(function(t){
+  ecv.addEventListener(t,function(){ drag=null; });
+});
+
+document.getElementById('lookHere').addEventListener('click',function(){
+  if(editIdx===null) return;
+  faces[editIdx].pose.yaw=0; faces[editIdx].pose.pitch=0;
+  drawEditor(); paintTape();
+});
+document.getElementById('unpick').addEventListener('click',function(){
+  if(editIdx===null) return;
+  const idx=picks.indexOf(editIdx);
+  if(idx>=0) picks.splice(idx,1);
+  closeEditor();
+});
+document.getElementById('backBtn').addEventListener('click',closeEditor);
+
+/* ============================================================
+   9. 配線
+   ============================================================ */
+document.getElementById('rollAll').addEventListener('click',rollAll);
+document.querySelectorAll('#kinds button').forEach(function(b){
+  b.addEventListener('click',function(){
+    kind=b.dataset.kind;
+    document.querySelectorAll('#kinds button').forEach(function(o){
+      o.setAttribute('aria-pressed',o===b?'true':'false');});
+    rollAll();
+  });
+});
+const sw=document.getElementById('swatches');
+TAPES.forEach(function(c,i){
+  const b=document.createElement('button');
+  b.className='sw'; b.style.background=c;
+  b.setAttribute('aria-pressed', i===0?'true':'false');
+  b.setAttribute('aria-label','テープの いろ '+(i+1));
+  b.addEventListener('click',function(){
+    tapeColor=c;
+    sw.querySelectorAll('.sw').forEach(function(o){
+      o.setAttribute('aria-pressed',o===b?'true':'false');});
+    paintTape();
+  });
+  sw.appendChild(b);
+});
+document.querySelectorAll('#lang button').forEach(function(b){
+  b.addEventListener('click',function(){
+    lang=b.dataset.lang;
+    document.querySelectorAll('#lang button').forEach(function(o){
+      o.setAttribute('aria-pressed',o===b?'true':'false');});
+    applyLang();
+  });
+});
+window.addEventListener('resize',function(){
+  paintTape();
+  if(editIdx!==null){ drawEditor(); }
+  else faces.forEach(function(_,i){redrawCell(i);});
+});
+
+applyLang();
+rollAll();
+</script>
+</body>
+</html>
