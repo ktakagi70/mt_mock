@@ -114,7 +114,7 @@ h1{font-size:26px;font-weight:700;letter-spacing:.02em;margin-top:6px;line-heigh
 <header>
   <div class="topbar">
     <div>
-      <div class="eyebrow">maskingtape / mock 02 — v8</div>
+      <div class="eyebrow">maskingtape / mock 02 — v9</div>
       <h1 id="t-title">かおテープ ジェネレーター</h1>
     </div>
     <div class="lang" id="lang">
@@ -607,13 +607,19 @@ const STR={
     tapeAria:'Tape colour '
   }
 };
-let lang='ja';
+let lang=(function(){
+  const q=new URLSearchParams(location.search).get('lang');
+  return q==='en' ? 'en' : 'ja';   /* ?lang=en 以外は すべて 日本語 */
+})();
 const T=()=>STR[lang];
 const STACHE_KEYS=['none','moja','kuru','neko'];
 
 function applyLang(){
   const t=T();
   document.documentElement.lang=lang;
+  document.querySelectorAll('#lang button').forEach(function(b){
+    b.setAttribute('aria-pressed', b.dataset.lang===lang?'true':'false');
+  });
   document.getElementById('t-title').textContent=t.title;
   document.getElementById('t-lede').textContent=t.lede;
   document.getElementById('t-cap').innerHTML=t.cap;
@@ -825,9 +831,10 @@ TAPES.forEach(function(c,i){
 document.querySelectorAll('#lang button').forEach(function(b){
   b.addEventListener('click',function(){
     lang=b.dataset.lang;
-    document.querySelectorAll('#lang button').forEach(function(o){
-      o.setAttribute('aria-pressed',o===b?'true':'false');});
     applyLang();
+    const url=new URL(location.href);
+    if(lang==='en') url.searchParams.set('lang','en'); else url.searchParams.delete('lang');
+    history.replaceState(null,'',url);   /* リロードせず、共有URLだけ更新 */
   });
 });
 window.addEventListener('resize',function(){
